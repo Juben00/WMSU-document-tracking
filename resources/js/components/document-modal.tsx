@@ -7,7 +7,6 @@ interface DocumentModalProps {
     previewOpen: boolean;
     setPreviewOpen: (open: boolean) => void;
     previewRef: React.RefObject<HTMLDivElement | null>;
-    memoNumber: string;
     memoDate: string;
     memoFor: string;
     memoThru: string;
@@ -21,7 +20,6 @@ const DocumentModal: React.FC<DocumentModalProps> = ({
     previewOpen,
     setPreviewOpen,
     previewRef,
-    memoNumber,
     memoDate,
     memoFor,
     memoThru,
@@ -110,8 +108,7 @@ const DocumentModal: React.FC<DocumentModalProps> = ({
                         </div>
                     </div>
                     <div className="border-b-2 border-black my-2" />
-                    <div className="flex justify-between items-center mb-2">
-                        <div className="font-bold">MEMORANDUM ORDER NO. <span className="underline">{memoNumber || '_____'}</span></div>
+                    <div className="flex justify-end items-center mb-2">
                         <div className="font-bold">{memoDate || '_____'}</div>
                     </div>
                     <div className="mb-2"><b>Series of 2025</b></div>

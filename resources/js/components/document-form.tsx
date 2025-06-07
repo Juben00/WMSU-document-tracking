@@ -6,7 +6,8 @@ import { Button } from './ui/button'
 import { useState } from 'react'
 import CKEditorComponent from './ckeditor'
 import DocumentModal from './document-modal'
-import { router } from '@inertiajs/react'
+import { router, usePage } from '@inertiajs/react'
+import { type SharedData } from '@/types'
 
 interface DocumentFormProps {
     isOpen: boolean;
@@ -14,15 +15,29 @@ interface DocumentFormProps {
 }
 
 const DocumentForm: React.FC<DocumentFormProps> = ({ isOpen, onOpenChange }) => {
-    const [memoNumber, setMemoNumber] = useState('')
+    const { auth } = usePage<SharedData>().props;
     const [memoDate, setMemoDate] = useState('')
     const [memoFor, setMemoFor] = useState('')
     const [memoThru, setMemoThru] = useState('')
     const [memoFrom, setMemoFrom] = useState('')
-    const [memoRecipient, setMemoRecipient] = useState('')
     const [memoSubject, setMemoSubject] = useState('')
     const [memoBody, setMemoBody] = useState('')
     const [previewOpen, setPreviewOpen] = useState(false)
+
+    // Set memoFrom with user's full name when component mounts
+    useEffect(() => {
+        if (auth.user) {
+            const fullName = `${auth.user.first_name} ${auth.user.middle_name} ${auth.user.last_name}${auth.user.suffix ? `, ${auth.user.suffix}` : ''}${auth.user.title ? `, ${auth.user.title}` : ''}`.trim();
+            setMemoFrom(fullName);
+        }
+    }, [auth.user]);
+
+    // Set default date to current date
+    useEffect(() => {
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        setMemoDate(formattedDate);
+    }, []);
 
     const previewRef = React.useRef<HTMLDivElement>(null);
 
@@ -30,12 +45,10 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ isOpen, onOpenChange }) => 
         e.preventDefault()
         // TODO: Implement document creation logic
         console.log('Creating document:', {
-            memoNumber,
             memoDate,
             memoFor,
             memoThru,
             memoFrom,
-            memoRecipient,
             memoSubject,
             memoBody
         })
@@ -61,16 +74,6 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ isOpen, onOpenChange }) => 
                 <div className="grid gap-4">
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="w-full sm:flex-1">
-                            <Label htmlFor="memoNumber">Memo No.</Label>
-                            <Input id="memoNumber" value={memoNumber} onChange={e => setMemoNumber(e.target.value)} placeholder="e.g. 0118" />
-                        </div>
-                        <div className="w-full sm:flex-1">
-                            <Label htmlFor="memoDate">Date</Label>
-                            <Input id="memoDate" type="date" value={memoDate} onChange={e => setMemoDate(e.target.value)} />
-                        </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="w-full sm:flex-1">
                             <Label htmlFor="memoFor">For</Label>
                             <Input id="memoFor" value={memoFor} onChange={e => setMemoFor(e.target.value)} placeholder="e.g. MA. CARLA A. OCHOTORENA, RN, PhD" />
                         </div>
@@ -85,17 +88,8 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ isOpen, onOpenChange }) => 
                             <Input id="memoFrom" value={memoFrom} onChange={e => setMemoFrom(e.target.value)} placeholder="e.g. MARK L. FLORES, PhD" />
                         </div>
                         <div className="w-full sm:flex-1">
-                            <Label htmlFor="memoRecipient">Recipient</Label>
-                            <Select value={memoRecipient} onValueChange={setMemoRecipient}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select recipient" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="user1">User 1</SelectItem>
-                                    <SelectItem value="user2">User 2</SelectItem>
-                                    <SelectItem value="user3">User 3</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="memoDate">Date</Label>
+                            <Input id="memoDate" type="date" value={memoDate} onChange={e => setMemoDate(e.target.value)} />
                         </div>
                     </div>
                     <div className="w-full">
@@ -122,7 +116,6 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ isOpen, onOpenChange }) => 
                 previewOpen={previewOpen}
                 setPreviewOpen={setPreviewOpen}
                 previewRef={previewRef}
-                memoNumber={memoNumber}
                 memoDate={memoDate}
                 memoFor={memoFor}
                 memoThru={memoThru}
