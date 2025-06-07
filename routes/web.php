@@ -24,6 +24,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('user/documents');
     })->name('documents');
 
+    Route::get('/documents/create', function () {
+        return Inertia::render('user/documents-create');
+    })->name('documents.create');
+
 });
 
 require __DIR__.'/settings.php';

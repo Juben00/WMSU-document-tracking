@@ -44,6 +44,7 @@ type FilePickerCallback = (cb: (url: string, meta?: any) => void, value: string,
 
 const Documents = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('received');
     const [memoNumber, setMemoNumber] = useState('');
@@ -109,23 +110,10 @@ const Documents = () => {
             <div className="container mx-auto p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Documents</h1>
-                    <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create Document
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Create Document</DialogTitle>
-                                <DialogDescription>
-                                    Create a new document to send to your recipients.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <DocumentForm />
-                        </DialogContent>
-                    </Dialog>
+                    <Button onClick={() => router.visit('/documents/create')}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Document
+                    </Button>
                 </div>
 
                 <div className="mb-6">
