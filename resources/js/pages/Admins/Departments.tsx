@@ -1,13 +1,10 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Plus, Trash2, Pencil, Eye } from 'lucide-react';
@@ -17,6 +14,7 @@ import EditDepartment from '@/components/Departments/EditDepartment';
 import type { Departments } from '@/types';
 import AddDepartment from '@/components/Departments/AddDepartment';
 import Swal from 'sweetalert2';
+import Spinner from '@/components/spinner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,6 +38,13 @@ export default function Departments({ departments, auth }: Props) {
     const [selectedOffice, setSelectedOffice] = useState<Departments | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
+    const { processing, delete: destroy, data, setData, post, errors, reset, put } = useForm({
+        name: '',
+        code: '',
+        description: '',
+        type: '',
+    });
+
     const handleDeleteOffice = (department: Departments) => {
         Swal.fire({
             title: 'Are you sure?',
@@ -51,12 +56,11 @@ export default function Departments({ departments, auth }: Props) {
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                router.delete(route('departments.destroy', department.id), {
+                destroy(route('departments.destroy', department.id), {
                     onSuccess: () => {
                         toast.success('Department deleted successfully');
-                        router.reload({ only: ['departments'] });
                     },
-                    onError: (errors) => {
+                    onError: (errors: any) => {
                         console.error('Delete error:', errors);
                         if (errors.department) {
                             toast.error(errors.department);
@@ -76,11 +80,17 @@ export default function Departments({ departments, auth }: Props) {
 
     const handleEditOffice = (department: Departments) => {
         setSelectedOffice(department);
+        // Initialize form data with the selected department's data
+        setData('name', department.name || '');
+        setData('code', department.code || '');
+        setData('description', department.description || '');
+        setData('type', department.type || '');
         setIsEditDialogOpen(true);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+            {processing && <Spinner />}
             <Head title="Departments Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="flex justify-between items-center">
@@ -103,7 +113,7 @@ export default function Departments({ departments, auth }: Props) {
                             <DialogHeader>
                                 <DialogTitle>Create New Department</DialogTitle>
                             </DialogHeader>
-                            <AddDepartment setIsCreateDialogOpen={setIsCreateDialogOpen} />
+                            <AddDepartment setIsCreateDialogOpen={setIsCreateDialogOpen} processing={processing} post={post} setData={setData} data={data} errors={errors} reset={reset} />
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -205,6 +215,12 @@ export default function Departments({ departments, auth }: Props) {
                             <EditDepartment
                                 department={selectedOffice}
                                 setIsEditDialogOpen={setIsEditDialogOpen}
+                                processing={processing}
+                                put={put}
+                                setData={setData}
+                                data={data}
+                                errors={errors}
+                                reset={reset}
                             />
                         )}
                     </DialogContent>

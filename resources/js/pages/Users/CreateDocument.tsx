@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MultiSelect } from '@/components/ui/multi-select';
 import Swal from 'sweetalert2';
-import { FileText, FileCheck, Users, Hash, User as UserIcon, Building, Calendar, Upload, ArrowLeft, RefreshCw } from 'lucide-react';
+import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw } from 'lucide-react';
+import Spinner from '@/components/spinner';
 
 type FormData = {
     subject: string;
@@ -43,13 +44,7 @@ interface Props {
     }>;
 }
 
-// Spinner for submit button
-const Spinner = () => (
-    <svg className="animate-spin h-5 w-5 text-white inline-block ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-    </svg>
-);
+
 
 const CreateDocument = ({ auth, departments }: Props) => {
     // Use a ref to store object URLs for cleanup
@@ -245,6 +240,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
         router.post(route('users.documents.send'), formData, {
             forceFormData: true,
             onSuccess: () => {
+                setIsSubmitting(false);
                 Swal.fire({
                     icon: 'success',
                     title: 'Document Submitted!',
@@ -340,6 +336,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
     return (
         <>
+            {(isSubmitting || processing) && <Spinner />}
             <Navbar />
             <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -746,7 +743,15 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     disabled={isSubmitting || processing}
                                     className="px-8 py-3 rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 transform hover:scale-105"
                                 >
-                                    {isSubmitting || processing ? (<><span>Submitting...</span><Spinner /></>) : 'Submit Document'}
+                                    {isSubmitting || processing ? (
+                                        <>
+                                            <span>Submitting...</span>
+                                            <svg className="animate-spin h-4 w-4 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                            </svg>
+                                        </>
+                                    ) : 'Submit Document'}
                                 </button>
                             </div>
                         </div>

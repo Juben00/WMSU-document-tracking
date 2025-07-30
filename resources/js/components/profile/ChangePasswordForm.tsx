@@ -109,52 +109,6 @@ const ChangePasswordForm: React.FC<Props> = ({ data, errors, processing, onChang
                     </div>
                 </div>
 
-                {/* Password Requirements Section */}
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-xl p-6 border border-emerald-200 dark:border-emerald-700">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-lg">
-                            <Shield className="w-4 h-4 text-white" />
-                        </div>
-                        <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-100">Password Requirements</h3>
-                    </div>
-
-                    <div className="space-y-4">
-                        <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium">Your password must meet the following criteria:</p>
-                        <ul className="space-y-3">
-                            <li className="flex items-center gap-3 text-sm text-emerald-800 dark:text-emerald-200">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-700">
-                                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
-                                </div>
-                                At least 8 characters long
-                            </li>
-                            <li className="flex items-center gap-3 text-sm text-emerald-800 dark:text-emerald-200">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-700">
-                                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
-                                </div>
-                                At least one uppercase letter (A-Z)
-                            </li>
-                            <li className="flex items-center gap-3 text-sm text-emerald-800 dark:text-emerald-200">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-700">
-                                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
-                                </div>
-                                At least one lowercase letter (a-z)
-                            </li>
-                            <li className="flex items-center gap-3 text-sm text-emerald-800 dark:text-emerald-200">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-700">
-                                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
-                                </div>
-                                At least one number (0-9)
-                            </li>
-                            <li className="flex items-center gap-3 text-sm text-emerald-800 dark:text-emerald-200">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-700">
-                                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
-                                </div>
-                                At least one special character (!@#$%^&*)
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
                 {/* Submit Button */}
                 <div className="flex justify-end pt-6">
                     <Button

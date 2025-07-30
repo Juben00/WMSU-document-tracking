@@ -1,11 +1,12 @@
 import Navbar from '@/components/User/navbar'
-import React, { useState, useEffect } from 'react'
+import React, { useState, } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Users, Building, UserPlus, User } from 'lucide-react'
+import { Pencil, Trash2, Users, UserPlus } from 'lucide-react'
+import Spinner from '@/components/spinner'
 import InputError from '@/components/input-error'
 import Swal from 'sweetalert2'
 import TabHeader from '@/components/User/tab-header'
@@ -63,9 +64,6 @@ const Offices = ({ auth, users }: Props) => {
         password: 'password',
         password_confirmation: 'password',
     });
-
-    // Check if there's already a receiver in the office
-    const hasReceiver = users.some(user => user.role === 'receiver');
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -140,10 +138,9 @@ const Offices = ({ auth, users }: Props) => {
         });
     };
 
-    console.log(auth.user);
-
     return (
         <>
+            {processing && <Spinner />}
             <Navbar />
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -158,7 +155,7 @@ const Offices = ({ auth, users }: Props) => {
                                         <span className="hidden md:block">Create User</span>
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-lg rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                <DialogContent className=" max-w-lg rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                                     <DialogHeader>
                                         <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Create New User</DialogTitle>
                                     </DialogHeader>
@@ -243,26 +240,6 @@ const Offices = ({ auth, users }: Props) => {
                                                 <InputError message={errors.position} />
                                             </div>
                                         </div>
-                                        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor="role" className="text-gray-700 dark:text-gray-200">Role</Label>
-                                                <Select
-                                                    value={data.role}
-                                                    onValueChange={value => setData('role', value)}
-                                                >
-                                                    <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                                                        <SelectValue placeholder="Select role" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="receiver" disabled={hasReceiver}>
-                                                            Receiver {hasReceiver && "(Already exists)"}
-                                                        </SelectItem>
-                                                        <SelectItem value="user">User</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <InputError message={errors.role} />
-                                            </div>
-                                        </div> */}
                                         <div className="space-y-1.5">
                                             <Label htmlFor="email" className="text-gray-700 dark:text-gray-200">Email</Label>
                                             <Input
@@ -497,27 +474,6 @@ const Offices = ({ auth, users }: Props) => {
                                     />
                                     <InputError message={errors.email} />
                                 </div>
-                                {/* <div className="space-y-1.5">
-                                    <Label htmlFor="edit_role" className="text-gray-700 dark:text-gray-200">Role</Label>
-                                    <Select
-                                        value={data.role}
-                                        onValueChange={value => setData('role', value)}
-                                    >
-                                        <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                                            <SelectValue placeholder="Select role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem
-                                                value="receiver"
-                                                disabled={hasReceiver && selectedUser?.role !== 'receiver'}
-                                            >
-                                                Receiver {hasReceiver && selectedUser?.role !== 'receiver' && "(Already exists)"}
-                                            </SelectItem>
-                                            <SelectItem value="user">User</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.role} />
-                                </div> */}
                                 <div className="flex justify-end gap-2 pt-2">
                                     <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
                                         Cancel
