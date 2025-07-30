@@ -8,6 +8,7 @@ import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
 import AccountDetailsCard from '@/components/profile/AccountDetailsCard';
 import ChangePasswordForm from '@/components/profile/ChangePasswordForm';
 import { User as UserIcon, Settings } from 'lucide-react';
+import Spinner from '@/components/spinner';
 
 interface Props {
     user: User;
@@ -95,6 +96,7 @@ const Profile = ({ user }: Props) => {
 
     return (
         <>
+            {(profileProcessing || passwordProcessing) && <Spinner />}
             <Head title="Profile Settings" />
             <Navbar />
             <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">

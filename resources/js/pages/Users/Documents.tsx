@@ -1,17 +1,10 @@
-"use client"
-
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Navbar from "@/components/User/navbar"
-import { Link, router } from "@inertiajs/react"
+import DocumentTable from "@/components/User/document-table"
+import { Link, router, useForm } from "@inertiajs/react"
 import {
-    Eye,
-    Download,
     Search,
-    FileCheck2,
-    Clock,
-    XCircle,
-    Undo2,
     FileSearch,
     Filter,
     BarChart3,
@@ -20,18 +13,17 @@ import {
     Users,
     Calendar,
     Archive,
-    Hash,
-    Send,
-    Inbox,
+    X,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner"
 import Swal from "sweetalert2"
 import TabHeader from "@/components/User/tab-header"
+import Spinner from "@/components/spinner"
+import ReceiveDocument from "@/components/User/receive-document"
 
 interface Document {
     id: number
@@ -43,10 +35,10 @@ interface Document {
     barcode_value?: string
     order_number?: string
     files?: { id: number }[]
-    recipient_status?: string // Added for barcode confirmation
-    sequence?: number // Added for sequence number
-    user_id?: number // Added for user_id
-    department_id?: number // Added for department_id
+    recipient_status?: string
+    sequence?: number
+    user_id?: number
+    department_id?: number
 }
 
 interface Props {
@@ -58,12 +50,7 @@ interface Props {
     }
 }
 
-const statusIcons: Record<string, React.ReactNode> = {
-    approved: <FileCheck2 className="w-4 h-4 text-emerald-600" />,
-    pending: <Clock className="w-4 h-4 text-amber-600" />,
-    rejected: <XCircle className="w-4 h-4 text-red-600" />,
-    returned: <Undo2 className="w-4 h-4 text-orange-600" />,
-}
+
 
 const Documents = ({ documents, auth }: Props) => {
     const [activeTab, setActiveTab] = useState("received")
@@ -74,30 +61,56 @@ const Documents = ({ documents, auth }: Props) => {
     const [fiscalYearFilter, setFiscalYearFilter] = useState("all")
     const [archivedFilter, setArchivedFilter] = useState("all")
     const [showBarcodeModal, setShowBarcodeModal] = useState(false)
-    const [barcodeInput, setBarcodeInput] = useState("")
-    const [barcodeLoading, setBarcodeLoading] = useState(false)
 
-    // Get current fiscal year (January to December)
+    const { data, setData, post, processing, errors, reset } = useForm({
+        barcode_value: ''
+    })
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        post(route('users.documents.confirm-receive'), {
+            onSuccess: () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Document Received',
+                    text: 'Document successfully marked as received.',
+                    confirmButtonColor: '#b91c1c',
+                }).then(() => {
+                    setShowBarcodeModal(false)
+                    reset()
+                    setActiveTab("received")
+                })
+            },
+            onError: (errors: any) => {
+                console.log("Errors:", errors)
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Document Not Found',
+                    text: errors.barcode_value || 'Invalid barcode. Document not found.',
+                    confirmButtonColor: '#b91c1c',
+                })
+            }
+        })
+    }
+
+
     const getCurrentFiscalYear = () => {
         const now = new Date()
         return now.getFullYear()
     }
 
-    // Get fiscal year from date
     const getFiscalYear = (date: string) => {
         return new Date(date).getFullYear()
     }
 
-    // Get available fiscal years from documents
     const getAvailableFiscalYears = () => {
         const years = new Set<number>()
         documents.forEach((doc) => {
             years.add(getFiscalYear(doc.created_at))
         })
-        return Array.from(years).sort((a, b) => b - a) // Sort descending
+        return Array.from(years).sort((a, b) => b - a)
     }
 
-    // Filter documents by fiscal year
     const isInCurrentFiscalYear = (date: string) => {
         const docYear = getFiscalYear(date)
         const currentYear = getCurrentFiscalYear()
@@ -183,7 +196,7 @@ const Documents = ({ documents, auth }: Props) => {
     // Archived documents are those not in the current fiscal year
     const archived = documents.filter((doc) => !isInCurrentFiscalYear(doc.created_at))
 
-    const getStatusVariant = (status: string) => {
+    const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
         switch (status) {
             case "approved":
                 return "default"
@@ -200,7 +213,7 @@ const Documents = ({ documents, auth }: Props) => {
         }
     }
 
-    const getDocumentTypeVariant = (documentType: string) => {
+    const getDocumentTypeVariant = (documentType: string): "default" | "secondary" | "destructive" | "outline" => {
         switch (documentType) {
             case "special_order":
                 return "secondary"
@@ -281,212 +294,39 @@ const Documents = ({ documents, auth }: Props) => {
     const renderDocuments = (docs: Document[]) => {
         const filtered = filterDocs(docs)
 
-        if (filtered.length === 0) {
-            return (
-                <div className="col-span-full flex flex-col items-center justify-center py-16 px-4">
-                    <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                        <FileText className="w-12 h-12 text-slate-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No documents found</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-center max-w-md">
-                        Try adjusting your search terms or filter criteria to find the documents you're looking for.
-                    </p>
-                </div>
-            )
-        }
-
-        return filtered.map((doc) => (
-            <Card
-                key={doc.id}
-                className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md hover:scale-[1.02] bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900"
-            >
-                <CardHeader className="md:pb-4">
-                    <div className="flex items-start gap-4">
-                        <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
-                            <FileText className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate text-slate-900 dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors leading-tight">
-                                {doc.subject}
-                            </h3>
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2 mt-2 text-sm text-slate-500 dark:text-slate-400">
-                                {doc.order_number && (
-                                    <div className="flex items-center gap-1">
-                                        <Hash className="w-3 h-3" />
-                                        <span className="font-mono">{doc.order_number}</span>
-                                    </div>
-                                )}
-                                {doc.barcode_value && (
-                                    <>
-                                        {doc.order_number && <span className="hidden lg:block">•</span>}
-                                        <div className="flex items-center gap-1">
-                                            <BarChart3 className="w-3 h-3" />
-                                            <span className="font-mono">{doc.barcode_value}</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent className="pt-0 space-y-4">
-                    <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                                {new Date(doc.created_at).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                })}
-                            </span>
-                        </div>
-                        {doc.files && doc.files.length > 0 && (
-                            <div className="flex items-center gap-2">
-                                <Download className="w-4 h-4" />
-                                <span>
-                                    {doc.files.length} file{doc.files.length !== 1 ? "s" : ""}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {activeTab === "archived" && (
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                                FY {getFiscalYear(doc.created_at)}
-                            </Badge>
-                            <Badge variant={isDocumentSentByUser(doc) ? "default" : "secondary"} className="text-xs">
-                                {isDocumentSentByUser(doc) ? (
-                                    <>
-                                        <Send className="w-3 h-3 mr-1" />
-                                        Sent
-                                    </>
-                                ) : (
-                                    <>
-                                        <Inbox className="w-3 h-3 mr-1" />
-                                        Received
-                                    </>
-                                )}
-                            </Badge>
-                        </div>
-                    )}
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={getDocumentTypeVariant(doc.document_type)} className="text-xs">
-                            {getDocumentTypeDisplayName(doc.document_type)}
-                        </Badge>
-                        <Badge variant={getStatusVariant(doc.status)} className="text-xs">
-                            <span className="mr-1">{statusIcons[doc.status]}</span>
-                            {doc.status.charAt(0).toUpperCase() + doc.status.slice(1).replace("_", " ")}
-                        </Badge>
-                    </div>
-
-                    <Link href={`/documents/${doc.id}`} className="w-full">
-                        <Button className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-lg dark:text-white hover:shadow-xl transition-all duration-200">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Document
-                        </Button>
-                    </Link>
-                </CardContent>
-            </Card>
-        ))
+        return (
+            <DocumentTable
+                documents={filtered}
+                activeTab={activeTab}
+                getStatusVariant={getStatusVariant}
+                getDocumentTypeVariant={getDocumentTypeVariant}
+                getDocumentTypeDisplayName={getDocumentTypeDisplayName}
+                getFiscalYear={getFiscalYear}
+            />
+        )
     }
 
     const tabConfig = [
         { id: "received", label: "Received", icon: Users, count: received.length },
-        { id: "sent", label: "Sent", icon: FileCheck2, count: sent.length },
+        { id: "sent", label: "Sent", icon: FileText, count: sent.length },
         { id: "archived", label: "Archived", icon: Archive, count: archived.length },
     ]
 
     return (
         <>
+            {processing && <Spinner />}
             <Navbar />
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Barcode Modal */}
                     {showBarcodeModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-8 w-full max-w-md relative">
-                                <button
-                                    className="absolute top-3 right-3 text-gray-400 hover:text-red-600"
-                                    onClick={() => setShowBarcodeModal(false)}
-                                >
-                                    <XCircle className="w-6 h-6" />
-                                </button>
-                                <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
-                                    <BarChart3 className="w-6 h-6 text-red-600" />
-                                    Search Document
-                                </h2>
-                                <p className="mb-4 text-slate-600 dark:text-slate-300">Enter the barcode value provided with your document to receive it.</p>
-                                <form
-                                    onSubmit={async (e) => {
-                                        e.preventDefault()
-                                        setBarcodeLoading(true)
-                                        try {
-                                            console.log("Submitting barcode:", barcodeInput)
-
-                                            router.post(route('users.documents.confirm-receive'), {
-                                                barcode_value: barcodeInput
-                                            }, {
-                                                onSuccess: (page) => {
-                                                    console.log("Success:", page)
-                                                    Swal.fire({
-                                                        icon: 'success',
-                                                        title: 'Document Received',
-                                                        text: 'Document successfully marked as received.',
-                                                        confirmButtonColor: '#b91c1c',
-                                                    }).then(() => {
-                                                        setShowBarcodeModal(false)
-                                                        setBarcodeInput("")
-                                                        setActiveTab("received")
-                                                    })
-                                                },
-                                                onError: (errors) => {
-                                                    console.log("Errors:", errors)
-                                                    Swal.fire({
-                                                        icon: 'error',
-                                                        title: 'Document Not Found',
-                                                        text: errors.barcode_value || 'Invalid barcode. Document not found.',
-                                                        confirmButtonColor: '#b91c1c',
-                                                    })
-                                                },
-                                                onFinish: () => {
-                                                    setBarcodeLoading(false)
-                                                }
-                                            })
-                                        } catch (err) {
-                                            console.error("Error confirming receipt:", err)
-                                            Swal.fire({
-                                                icon: 'error',
-                                                title: 'Error',
-                                                text: "An error occurred. Please try again.",
-                                                confirmButtonColor: '#b91c1c',
-                                            })
-                                            setBarcodeLoading(false)
-                                        }
-                                    }}
-                                >
-                                    <Input
-                                        type="text"
-                                        placeholder="Enter barcode value..."
-                                        value={barcodeInput}
-                                        onChange={e => setBarcodeInput(e.target.value)}
-                                        className="mb-4 h-12 text-lg"
-                                        required
-                                        autoFocus
-                                    />
-                                    <Button
-                                        type="submit"
-                                        className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-lg"
-                                        disabled={barcodeLoading || !barcodeInput.trim()}
-                                    >
-                                        {barcodeLoading ? "Searching..." : "Search Document"}
-                                    </Button>
-                                </form>
-                            </div>
-                        </div>
+                        <ReceiveDocument
+                            setShowBarcodeModal={setShowBarcodeModal}
+                            handleSubmit={handleSubmit}
+                            data={data}
+                            processing={processing}
+                            setData={setData}
+                        />
                     )}
 
                     {/* Enhanced Header Section */}
@@ -499,11 +339,9 @@ const Documents = ({ documents, auth }: Props) => {
                                     <Button
                                         size="lg"
                                         variant="outline"
-                                        className="border-red-600 text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-900 dark:hover:text-white dark:bg-gray-800"
+                                        className="border-red-600 cursor-pointer text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-900 dark:hover:text-white dark:bg-gray-800"
                                         onClick={() => {
                                             setShowBarcodeModal(true)
-                                            // Test toast
-                                            toast.info("Barcode modal opened")
                                         }}
                                     >
                                         <BarChart3 className="w-5 h-5 mr-1" />
@@ -513,7 +351,7 @@ const Documents = ({ documents, auth }: Props) => {
                                 <Link href="/documents/create">
                                     <Button
                                         size="lg"
-                                        className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-lg hover:shadow-xl transition-all duration-200 dark:text-white"
+                                        className="bg-gradient-to-r from-red-600 to-red-700 cursor-pointer hover:from-red-700 hover:to-red-800 shadow-lg hover:shadow-xl transition-all duration-200 dark:text-white"
                                     >
                                         <Plus className="w-5 h-5 mr-1" />
                                         New Document
@@ -533,7 +371,7 @@ const Documents = ({ documents, auth }: Props) => {
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
-                                            className={`bg-white  flex justify-center items-center dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${activeTab === tab.id
+                                            className={`bg-white  flex justify-center cursor-pointer items-center dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${activeTab === tab.id
                                                 ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg"
                                                 : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
                                                 }`}
@@ -693,12 +531,10 @@ const Documents = ({ documents, auth }: Props) => {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {activeTab === "received" && renderDocuments(received)}
-                                {activeTab === "sent" && renderDocuments(sent)}
-                                {activeTab === "archived" && renderDocuments(archived)}
-                                {activeTab === "published" && renderDocuments(published)}
-                            </div>
+                            {activeTab === "received" && renderDocuments(received)}
+                            {activeTab === "sent" && renderDocuments(sent)}
+                            {activeTab === "archived" && renderDocuments(archived)}
+                            {activeTab === "published" && renderDocuments(published)}
                         </CardContent>
                     </Card>
                 </div>

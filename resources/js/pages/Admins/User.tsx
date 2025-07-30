@@ -1,13 +1,12 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { BreadcrumbItem, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
+import { useForm } from '@inertiajs/react';
 import { Plus, Trash2, Lock, Unlock, Eye, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -16,6 +15,7 @@ import EditAdmin from '@/components/Admin/EditAdmin';
 import { getFullName } from '@/lib/utils';
 import Swal from 'sweetalert2';
 import AddNewUser from '@/components/Admin/AddUser';
+import Spinner from '@/components/spinner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -53,6 +53,19 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+    const { processing, delete: destroy, patch, data, setData, post, errors, reset, put } = useForm({
+        first_name: '',
+        last_name: '',
+        middle_name: '',
+        suffix: '',
+        gender: '',
+        position: '',
+        department_id: '',
+        avatar: null,
+        email: '',
+        role: 'admin',
+    });
+
     const handleToggleStatus = (user: User) => {
         const action = user.is_active ? 'deactivate' : 'activate';
         Swal.fire({
@@ -65,12 +78,11 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                router.patch(route('admins.toggle-status', user.id), {}, {
+                patch(route('admins.toggle-status', user.id), {
                     onSuccess: () => {
                         toast.success(`User ${action}d successfully`);
-                        router.reload({ only: ['admins'] });
                     },
-                    onError: (errors) => {
+                    onError: (errors: any) => {
                         toast.error(`Failed to ${action} user. Please try again.`);
                     }
                 });
@@ -89,12 +101,11 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                router.delete(route('admins.destroy', user.id), {
+                destroy(route('admins.destroy', user.id), {
                     onSuccess: () => {
                         toast.success('User deleted successfully');
-                        router.reload({ only: ['admins'] });
                     },
-                    onError: (errors) => {
+                    onError: (errors: any) => {
                         toast.error('Failed to delete user. Please try again.');
                     }
                 });
@@ -109,11 +120,22 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
 
     const handleEditAdmin = (user: User) => {
         setSelectedAdmin(user);
+        // Initialize form data with the selected admin's data
+        setData('first_name', user.first_name);
+        setData('last_name', user.last_name);
+        setData('middle_name', user.middle_name || '');
+        setData('suffix', user.suffix || '');
+        setData('gender', user.gender);
+        setData('position', user.position);
+        setData('department_id', user.department?.id?.toString() || '');
+        setData('email', user.email);
+        setData('role', user.role);
         setIsEditDialogOpen(true);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+            {processing && <Spinner />}
             <Head title="Admin Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="flex justify-between items-center">
@@ -133,7 +155,21 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                     Create Admin
                                 </Button>
                             </DialogTrigger>
-                            <AddNewAdmin setIsCreateDialogOpen={setIsCreateDialogOpen} departments={departments} />
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Create New Admin</DialogTitle>
+                                </DialogHeader>
+                                <AddNewAdmin
+                                    setIsCreateDialogOpen={setIsCreateDialogOpen}
+                                    departments={departments}
+                                    processing={processing}
+                                    post={post}
+                                    setData={setData}
+                                    data={data}
+                                    errors={errors}
+                                    reset={reset}
+                                />
+                            </DialogContent>
                         </Dialog>
                         <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
                             <DialogTrigger asChild>
@@ -142,7 +178,21 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                     Create User
                                 </Button>
                             </DialogTrigger>
-                            <AddNewUser setIsCreateDialogOpen={setIsCreateUserDialogOpen} departments={departmentsForUserCreation} />
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Create New User</DialogTitle>
+                                </DialogHeader>
+                                <AddNewUser
+                                    setIsCreateDialogOpen={setIsCreateUserDialogOpen}
+                                    departments={departmentsForUserCreation}
+                                    processing={processing}
+                                    post={post}
+                                    setData={setData}
+                                    data={data}
+                                    errors={errors}
+                                    reset={reset}
+                                />
+                            </DialogContent>
                         </Dialog>
                     </div>
 
@@ -299,6 +349,12 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                 admin={selectedAdmin}
                                 departments={departments}
                                 setIsEditDialogOpen={setIsEditDialogOpen}
+                                processing={processing}
+                                put={put}
+                                setData={setData}
+                                data={data}
+                                errors={errors}
+                                reset={reset}
                             />
                         )}
                     </DialogContent>
