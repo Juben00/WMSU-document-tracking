@@ -10,7 +10,7 @@ interface SpinnerProps {
 const Spinner: React.FC<SpinnerProps> = ({
     size = 'xl',
     className = '',
-    text = 'Loading...'
+    text = 'WMSU DocTrack'
 }) => {
     const sizeClasses = {
         sm: 'w-16 h-16',
@@ -51,7 +51,7 @@ const Spinner: React.FC<SpinnerProps> = ({
                     </div>
                 </div>
 
-                {/* Loading text
+                {/* Loading text */}
                 {text && (
                     <div className="text-center">
                         <p className={`text-white font-semibold ${textSizes[size]} animate-pulse`}>
@@ -63,7 +63,7 @@ const Spinner: React.FC<SpinnerProps> = ({
                             <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                     </div>
-                )} */}
+                )}
             </div>
         </div>
     );
