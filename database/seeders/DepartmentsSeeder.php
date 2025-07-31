@@ -60,5 +60,27 @@ class DepartmentsSeeder extends Seeder
             'description' => 'College of Computing Studies',
             'type' => 'college',
         ]);
+
+        Departments::create([
+            'name' => 'University Student Council',
+            'code' => 'USC',
+            'description' => 'University Student Council',
+            'type' => 'office',
+        ]);
+
+        Departments::create([
+            'name' => 'Office of Student Affairs',
+            'code' => 'OSA',
+            'description' => 'Office of Student Affairs',
+            'type' => 'office',
+        ]);
+
+        Departments::create([
+            'name' => 'Office of the Legal Office',
+            'code' => 'OLO',
+            'description' => 'Office of the Legal Office',
+            'type' => 'office',
+        ]);
+
     }
 }
