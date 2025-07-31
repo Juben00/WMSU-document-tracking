@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { X, FileText, Image as ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 
 interface Department {
     id: number;
@@ -124,48 +125,38 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
             return;
         }
 
-        // Set submitting state to prevent multiple clicks
-        setIsSubmitting(true);
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Do you want to forward this document to another office?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#16a34a',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                post(route('documents.forward', documentId), {
-                    preserveScroll: true,
-                    forceFormData: true,
-                    onSuccess: () => {
-                        onClose();
-                        reset();
-                        setSelectedUser('');
-                        setComments('');
-                        // Clean up preview URLs
-                        files.forEach(fileWithPreview => {
-                            if (fileWithPreview.preview) {
-                                URL.revokeObjectURL(fileWithPreview.preview);
-                            }
-                        });
-                        setFiles([]);
-                        setIsSubmitting(false);
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: 'Document forwarded successfully',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    },
-                    onError: (errors: any) => {
-                        setIsSubmitting(false);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: 'An error occurred while forwarding the document'
-                        });
+        post(route('documents.forward', documentId), {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                onClose();
+                reset();
+                setSelectedUser('');
+                setComments('');
+                // Clean up preview URLs
+                files.forEach(fileWithPreview => {
+                    if (fileWithPreview.preview) {
+                        URL.revokeObjectURL(fileWithPreview.preview);
                     }
+                });
+                setFiles([]);
+                setIsSubmitting(false);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Document forwarded successfully',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    router.visit(route('users.documents')); // refresh the page
+                });
+            },
+            onError: (errors: any) => {
+                setIsSubmitting(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'An error occurred while forwarding the document'
                 });
             }
         });
