@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
             'department_id' => 1,
             'role' => 'admin',
             'avatar' => 'https://ui-avatars.com/api/?name=Test+User',
-            'email' => 'joevinansoc870@gmail.com',
+            'email' => 'wmsu_pres@gmail.com',
             'password' => Hash::make('password'),
         ]);
 
@@ -56,7 +56,7 @@ class UserSeeder extends Seeder
             'department_id' => 2,
             'role' => 'admin',
             'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
-            'email' => 'joevinansoc871@gmail.com',
+            'email' => 'wmsu_ovp@gmail.com',
             'password' => Hash::make('password'),
         ]);
 
@@ -71,7 +71,7 @@ class UserSeeder extends Seeder
             'department_id' => 3,
             'role' => 'admin',
             'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
-            'email' => 'joevinansoc872@gmail.com',
+            'email' => 'ovp_rd@gmail.coom',
             'password' => Hash::make('password'),
         ]);
 
@@ -86,11 +86,11 @@ class UserSeeder extends Seeder
             'department_id' => 4,
             'role' => 'admin',
             'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
-            'email' => 'joevinansoc873@gmail.com',
+            'email' => 'ovpaa@gmail.com',
             'password' => Hash::make('password'),
         ]);
 
-        // OVP-Finance
+        // OVP-Administration and Finance
         User::factory()->create([
             'first_name' => 'Vice',
             'last_name' => 'President for Finance',
@@ -101,7 +101,7 @@ class UserSeeder extends Seeder
             'department_id' => 5,
             'role' => 'admin',
             'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
-            'email' => 'joevinansoc874@gmail.com',
+            'email' => 'wmsu_finance@gmail.com',
             'password' => Hash::make('password'),
         ]);
 
@@ -116,8 +116,65 @@ class UserSeeder extends Seeder
             'department_id' => 6,
             'role' => 'admin',
             'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
-            'email' => 'joevinansoc875@gmail.com',
+            'email' => 'wmsu_ccs@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+            // UNIV STUDENT COUNCIL
+        User::factory()->create([
+            'first_name' => 'Student',
+            'last_name' => 'Regent',
+            'middle_name' => '',
+            'suffix' => 'Suffix',
+            'gender' => 'Male',
+            'position' => 'President',
+            'department_id' => 7,
+            'role' => 'admin',
+            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
+            'email' => 'wmsu_usc@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+    
+
+                // OSA
+        User::factory()->create([
+            'first_name' => 'Student',
+            'last_name' => 'Affairs',
+            'middle_name' => '',
+            'suffix' => 'Suffix',
+            'gender' => 'Male',
+            'position' => 'VP for Student Affairs',
+            'department_id' => 8,
+            'role' => 'admin',
+            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
+            'email' => 'wmsu_osa@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+            // Legal Office
+        User::factory()->create([
+            'first_name' => 'Legal',
+            'last_name' => 'Office',
+            'middle_name' => '',
+            'suffix' => 'Suffix',
+            'gender' => 'Male',
+            'position' => 'Head',
+            'department_id' => 8,
+            'role' => 'admin',
+            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
+            'email' => 'wmsu_legaloffice@gmail.com',
             'password' => Hash::make('password'),
         ]);
     }
+
+
 }
+
+
+//President: Dr. Ma. Carla A. Ochotorena
+
+//Vice Presidents:
+//Dr. Nursia M. Barjose (Academic Affairs)
+//Dr. Joel G. Fernando (Research, Extension & External Linkages)
+//Dr. Joselito D. Madroñal (Administration & Finance)
+//Dr. Fredelino M. San Juan (Resource Generation, UPRESS, Bids & Awards)
