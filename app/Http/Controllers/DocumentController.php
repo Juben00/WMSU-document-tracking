@@ -472,16 +472,22 @@ class DocumentController extends Controller
             abort(404, 'File not found');
         }
 
-        // Check if file exists in storage
-        if (!Storage::disk('public')->exists($file->file_path)) {
+        // Check if file exists in storage (remove 'public/' prefix if present)
+        $storagePath = $file->file_path;
+        if (str_starts_with($storagePath, 'public/')) {
+            $storagePath = substr($storagePath, 7); // Remove 'public/' prefix
+        }
+
+        if (!Storage::disk('public')->exists($storagePath)) {
             Log::warning('File not found in storage', [
-                'file_path' => $file->file_path
+                'file_path' => $file->file_path,
+                'storage_path' => $storagePath
             ]);
             abort(404, 'File not found in storage');
         }
 
         // Get the full path to the file
-        $path = Storage::disk('public')->path($file->file_path);
+        $path = Storage::disk('public')->path($storagePath);
 
         Log::info('File download successful', [
             'file_path' => $file->file_path,
