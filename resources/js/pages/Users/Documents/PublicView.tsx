@@ -253,7 +253,7 @@ const PublicView: React.FC<Props> = ({ document }) => {
                                         {document.barcode_path && (
                                             <a
                                                 href={`/storage/${document.barcode_path}`}
-                                                download={`barcode-${document.order_number || document.id}.png`}
+                                                download={`barcode-${document.order_number || document.id}.svg`}
                                                 className="p-2 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 transition"
                                                 title="Download"
                                             >
