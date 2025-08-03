@@ -17,6 +17,9 @@ class Document extends Model
     protected $fillable = [
         'owner_id',
         'department_id',
+        'request_from',
+        'request_from_department',
+        'signatory',
         'subject',
         'order_number',
         'document_type',

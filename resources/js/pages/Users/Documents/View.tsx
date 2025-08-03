@@ -88,6 +88,9 @@ interface Document {
     approval_chain: DocumentRecipient[];
     order_number: string;
     through_department_ids?: (string | number)[];
+    request_from?: string;
+    request_from_department?: string;
+    signatory?: string;
 }
 
 interface Department {
@@ -245,10 +248,6 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
     const [isForwardOtherOfficeModalOpen, setIsForwardOtherOfficeModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-    const [selectedOffice, setSelectedOffice] = useState<string>('');
-    const [comments, setComments] = useState('');
-    const [revisionFile, setRevisionFile] = useState<File | null>(null);
-    const [approveFile, setApproveFile] = useState<File | null>(null);
     const [copied, setCopied] = useState(false);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
@@ -258,6 +257,9 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
         revision_file: null as File | null,
         forward_to_id: null as number | null,
     });
+
+    console.log('document', document);
+
 
     // Check if current user is an active recipient
     // const currentRecipient = document.recipients.find(
@@ -553,6 +555,31 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                                 <dd className="mt-1 text-gray-900 dark:text-gray-200 leading-relaxed">{document.description}</dd>
                                             </div>
                                         )}
+
+                                        {/* Request From */}
+                                        {document.request_from && (
+                                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                                <dt className="text-sm font-semibold text-gray-600 dark:text-gray-100 mb-2">Request From</dt>
+                                                <dd className="mt-1 text-gray-900 dark:text-gray-200 leading-relaxed">{document.request_from}</dd>
+                                            </div>
+                                        )}
+
+                                        {/* Request From Department */}
+                                        {document.request_from_department && (
+                                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                                <dt className="text-sm font-semibold text-gray-600 dark:text-gray-100 mb-2">Request From Department</dt>
+                                                <dd className="mt-1 text-gray-900 dark:text-gray-200 leading-relaxed">{document.request_from_department}</dd>
+                                            </div>
+                                        )}
+
+                                        {/* Signatory */}
+                                        {document.signatory && (
+                                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                                <dt className="text-sm font-semibold text-gray-600 dark:text-gray-100 mb-2">Signatory</dt>
+                                                <dd className="mt-1 text-gray-900 dark:text-gray-200 leading-relaxed">{document.signatory}</dd>
+                                            </div>
+                                        )}
+
 
                                         {/* Created By */}
                                         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
