@@ -250,9 +250,9 @@ class UserController extends Controller
         }])->get();
 
         // get all departments except the current user's department
-        $departments = Departments::where('id', '!=', Auth::user()->department_id)->get();
+        // $departments = Departments::where('id', '!=', Auth::user()->department_id)->get();
         // get all department including the current user's department
-        // $departments = Departments::get();
+        $departments = Departments::get();
 
         return Inertia::render('Users/CreateDocument', [
             'auth' => [
@@ -1176,6 +1176,9 @@ class UserController extends Controller
             $document->save();
         } else if ($document->status === 'approved') {
             $document->status = 'approved';
+            $document->save();
+        } else if ($document->status === 'rejected') {
+            $document->status = 'rejected';
             $document->save();
         } else {
             $document->status = 'in_review';

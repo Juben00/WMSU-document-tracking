@@ -57,7 +57,7 @@ class AdminController extends Controller
         }
 
         // Generate a random password
-        $randomPassword = Str::random(12);
+        // $randomPassword = Str::random(12);
 
         $user = User::create([
             'first_name' => $request->first_name,
@@ -70,13 +70,13 @@ class AdminController extends Controller
             'role' => $request->role,
             'avatar' => $avatarPath,
             'email' => $request->email,
-            'password' => Hash::make($randomPassword),
+            'password' => Hash::make("password"),
         ]);
 
         // Notify the user about their account creation (in-app)
         $user->notify(new InAppNotification('Your admin account has been created.', ['user_id' => $user->id]));
         // Send email with credentials
-        $user->notify(new SendAdminAccountMail($user->first_name . ' ' . $user->last_name, $user->email, $randomPassword));
+        $user->notify(new SendAdminAccountMail($user->first_name . ' ' . $user->last_name, $user->email, "password"));
 
         return redirect()->route('admins.index');
     }

@@ -41,10 +41,11 @@ interface DocumentTableProps {
 }
 
 const statusIcons: Record<string, React.ReactNode> = {
-    approved: <FileCheck2 className="w-4 h-4 text-emerald-600" />,
-    pending: <Clock className="w-4 h-4 text-amber-600" />,
-    rejected: <XCircle className="w-4 h-4 text-red-600" />,
-    returned: <Undo2 className="w-4 h-4 text-orange-600" />,
+    approved: <FileCheck2 className="w-4 h-4 text-white" />,
+    pending: <Clock className="w-4 h-4 text-white" />,
+    rejected: <XCircle className="w-4 h-4 text-white" />,
+    returned: <Undo2 className="w-4 h-4 text-white" />,
+    in_review: <Clock className="w-4 h-4 text-white" />,
 }
 
 const DocumentTable: React.FC<DocumentTableProps> = ({
