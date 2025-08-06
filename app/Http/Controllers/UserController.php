@@ -323,7 +323,7 @@ class UserController extends Controller
                 return response()->json(['error' => 'User does not have a department assigned.'], 400);
             }
 
-            // Simplified approach without database locking
+                        // Simplified approach with retry mechanism for duplicate detection
             try {
                 // Check if this is the President's office (OP)
                 $isPresidentOffice = $department->code === 'OP';
@@ -336,9 +336,10 @@ class UserController extends Controller
                     'current_year' => $currentYear
                 ]);
 
-                // Get the latest order number for this department and document type
+                // Get the latest order number for this department and document type (excluding archived)
                 $query = Document::where('department_id', $departmentId)
-                    ->whereYear('created_at', $currentYear);
+                    ->whereYear('created_at', $currentYear)
+                    ->where('status', '!=', 'archived');
 
                 if ($isPresidentOffice) {
                     $query->where('document_type', $documentType);
@@ -372,22 +373,41 @@ class UserController extends Controller
                 // Format the order number based on department and document type
                 $departmentCode = $department->code;
 
-                // Format: DEPT-YEAR-NUMBER (e.g., OP-2024-001)
-                $orderNumber = sprintf('%s-%d-%03d', $departmentCode, $currentYear, $nextNumber);
+                // Try to find a unique order number (retry up to 10 times)
+                $maxAttempts = 10;
+                $attempt = 0;
+                $orderNumber = null;
+                $existingDocument = null;
 
-                // Double-check that this order number doesn't already exist
-                $existingDocument = Document::where('order_number', $orderNumber)
-                    ->where('department_id', $departmentId)
-                    ->whereYear('created_at', $currentYear)
-                    ->first();
+                do {
+                    $attempt++;
+                    $orderNumber = sprintf('%s-%d-%03d', $departmentCode, $currentYear, $nextNumber);
+
+                    // Check if this order number already exists
+                    $existingDocument = Document::where('order_number', $orderNumber)
+                        ->where('department_id', $departmentId)
+                        ->whereYear('created_at', $currentYear)
+                        ->where('status', '!=', 'archived')
+                        ->first();
+
+                    if ($existingDocument) {
+                        Log::warning('Duplicate order number detected, trying next number', [
+                            'attempt' => $attempt,
+                            'order_number' => $orderNumber,
+                            'department_id' => $departmentId,
+                            'user_id' => $currentUser->id
+                        ]);
+                        $nextNumber++;
+                    }
+                } while ($existingDocument && $attempt < $maxAttempts);
 
                 if ($existingDocument) {
-                    Log::error('Duplicate order number detected during generation', [
-                        'order_number' => $orderNumber,
+                    Log::error('Unable to generate unique order number after maximum attempts', [
+                        'max_attempts' => $maxAttempts,
                         'department_id' => $departmentId,
                         'user_id' => $currentUser->id
                     ]);
-                    throw new Exception('Duplicate order number detected. Please try again.');
+                    throw new Exception('Unable to generate unique order number. Please try again.');
                 }
 
                 // Log successful generation

@@ -116,7 +116,9 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 error.code === 'NETWORK_ERROR' ||
                 error.message.includes('Network Error') ||
                 error.response?.status >= 500 ||
-                error.response?.data?.message?.includes('Duplicate order number')
+                error.response?.data?.message?.includes('Duplicate order number') ||
+                error.response?.data?.error?.includes('Duplicate order number') ||
+                error.response?.data?.error?.includes('Unable to generate unique order number')
             );
 
             if (shouldRetry) {
@@ -136,8 +138,10 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 errorMessage = 'Server error occurred. Please try again later.';
             } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
                 errorMessage = 'Network error. Please check your connection and try again.';
-            } else if (error.response?.data?.message?.includes('Duplicate order number')) {
-                errorMessage = 'A duplicate order number was detected. Please try again.';
+            } else if (error.response?.data?.message?.includes('Duplicate order number') || error.response?.data?.error?.includes('Duplicate order number')) {
+                errorMessage = 'A duplicate order number was detected. The system will try to generate a new one.';
+            } else if (error.response?.data?.error?.includes('Unable to generate unique order number')) {
+                errorMessage = 'Unable to generate a unique order number. Please try again.';
             } else if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             } else if (error.response?.data?.error) {
