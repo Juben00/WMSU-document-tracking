@@ -617,7 +617,7 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                             </h3>
                                             {document.barcode_path && (
                                                 <>
-                                                    <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-48 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" />
+                                                    <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" />
                                                     {/* Barcode Value Card */}
                                                     <div className="w-full max-w-sm mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 dark:border-gray-700 mb-4">
                                                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Barcode</span>
