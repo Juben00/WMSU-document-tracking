@@ -8,7 +8,10 @@ use App\Models\DocumentRecipient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+use Exception;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Departments;
@@ -19,7 +22,6 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 use App\Notifications\InAppNotification;
 use App\Models\UserActivityLog;
 use App\Models\DocumentActivityLog;
-use Illuminate\Validation\ValidationException;
 use App\Notifications\SendAdminAccountMail;
 use Illuminate\Support\Str;
 
@@ -138,7 +140,7 @@ class UserController extends Controller
         ->with(['recipients' => function($q) {
             $q->where('received_by', Auth::id())
               ->where('status', 'received')
-              ->select('id', 'document_id', 'department_id', 'status', 'received_by', 'sequence');
+              ->select('id', 'document_id', 'department_id', 'status', 'received_by', 'sequence', 'received_at');
         }, 'files:id,document_id'])
         ->get();
 
@@ -171,6 +173,17 @@ class UserController extends Controller
             $doc->sequence = $latestRecipient ? $latestRecipient->sequence : null;
             $doc->recipient_status = $latestRecipient ? $latestRecipient->status : null;
             $doc->recipient_received_by = $latestRecipient ? $latestRecipient->received_by : null;
+            $doc->received_at = $latestRecipient ? $latestRecipient->received_at : null;
+
+            // Calculate if document is overstayed (more than 1 day)
+            $doc->is_overstayed = false;
+            if ($latestRecipient && $latestRecipient->received_at && $latestRecipient->status === 'received') {
+                $receivedAt = \Carbon\Carbon::parse($latestRecipient->received_at);
+                $now = \Carbon\Carbon::now();
+                $doc->is_overstayed = $receivedAt->diffInDays($now) >= 1;
+                $doc->days_overstayed = $receivedAt->diffInDays($now);
+            }
+
             return $doc;
         });
 
@@ -247,7 +260,10 @@ class UserController extends Controller
                   ->orderBy('role', 'desc'); // This will put receivers first
         }])->get();
 
-        $departments = Departments::where('id', '!=', Auth::user()->department_id)->get();
+        // get all departments except the current user's department
+        // $departments = Departments::where('id', '!=', Auth::user()->department_id)->get();
+        // get all department including the current user's department
+        $departments = Departments::get();
 
         return Inertia::render('Users/CreateDocument', [
             'auth' => [
@@ -259,50 +275,113 @@ class UserController extends Controller
 
     public function generateOrderNumber(Request $request)
     {
-        $request->validate([
-            'document_type' => 'required|in:special_order,order,memorandum,for_info',
-        ]);
+        try {
+            $request->validate([
+                'document_type' => 'required|in:special_order,order,memorandum,for_info',
+            ]);
 
-        $currentUser = Auth::user();
-        $departmentId = $currentUser->department_id;
-        $department = $currentUser->department;
-        $documentType = $request->input('document_type');
-        $currentYear = now()->year;
+            $currentUser = Auth::user();
 
-        // Check if user has a department assigned
-        if (!$department) {
-            return response()->json(['error' => 'User does not have a department assigned.'], 400);
+            if (!$currentUser) {
+                return response()->json(['error' => 'User not authenticated.'], 401);
+            }
+
+            $departmentId = $currentUser->department_id;
+            $department = $currentUser->department;
+            $documentType = $request->input('document_type');
+            $currentYear = now()->year;
+
+            // Check if user has a department assigned
+            if (!$department) {
+                Log::warning('User without department tried to generate order number', [
+                    'user_id' => $currentUser->id,
+                    'email' => $currentUser->email
+                ]);
+                return response()->json(['error' => 'User does not have a department assigned.'], 400);
+            }
+
+            // Use database transaction to prevent race conditions
+            return DB::transaction(function () use ($departmentId, $department, $documentType, $currentYear, $currentUser) {
+                // Check if this is the President's office (OP)
+                $isPresidentOffice = $department->code === 'OP';
+
+                // Get the latest order number for this department and document type
+                $query = Document::where('department_id', $departmentId)
+                    ->whereYear('created_at', $currentYear)
+                    ->lockForUpdate(); // Lock the rows to prevent race conditions
+
+                if ($isPresidentOffice) {
+                    $query->where('document_type', $documentType);
+                }
+
+                $latestDocument = $query->orderBy('order_number', 'desc')->first();
+
+                if ($latestDocument) {
+                    // Extract only the sequence number part (last 3 digits after the last dash)
+                    $parts = explode('-', $latestDocument->order_number);
+                    $lastPart = end($parts);
+
+                    // Validate that the last part is numeric
+                    if (!is_numeric($lastPart)) {
+                        Log::error('Invalid order number format found', [
+                            'order_number' => $latestDocument->order_number,
+                            'department_id' => $departmentId
+                        ]);
+                        throw new Exception('Invalid order number format in database.');
+                    }
+
+                    $nextNumber = intval($lastPart) + 1;
+                } else {
+                    $nextNumber = 1;
+                }
+
+                // Format the order number based on department and document type
+                $departmentCode = $department->code;
+
+                // Format: DEPT-YEAR-NUMBER (e.g., OP-2024-001)
+                $orderNumber = sprintf('%s-%d-%03d', $departmentCode, $currentYear, $nextNumber);
+
+                // Double-check that this order number doesn't already exist
+                $existingDocument = Document::where('order_number', $orderNumber)
+                    ->where('department_id', $departmentId)
+                    ->whereYear('created_at', $currentYear)
+                    ->first();
+
+                if ($existingDocument) {
+                    Log::error('Duplicate order number detected during generation', [
+                        'order_number' => $orderNumber,
+                        'department_id' => $departmentId,
+                        'user_id' => $currentUser->id
+                    ]);
+                    throw new Exception('Duplicate order number detected. Please try again.');
+                }
+
+                // Log successful generation
+                Log::info('Order number generated successfully', [
+                    'user_id' => $currentUser->id,
+                    'department_id' => $departmentId,
+                    'document_type' => $documentType,
+                    'order_number' => $orderNumber
+                ]);
+
+                return response()->json(['order_number' => $orderNumber]);
+            });
+
+        } catch (ValidationException $e) {
+            Log::warning('Validation error in generateOrderNumber', [
+                'errors' => $e->errors(),
+                'user_id' => Auth::id()
+            ]);
+            return response()->json(['error' => 'Invalid document type provided.'], 422);
+
+        } catch (Exception $e) {
+            Log::error('Error generating order number', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'document_type' => $request->input('document_type')
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        // Check if this is the President's office (OP)
-        $isPresidentOffice = $department->code === 'OP';
-
-        // Get the latest order number for this department and document type
-        $query = Document::where('department_id', $departmentId)
-            ->whereYear('created_at', $currentYear);
-
-        if ($isPresidentOffice) {
-            $query->where('document_type', $documentType);
-        }
-
-        $latestDocument = $query->orderBy('order_number', 'desc')->first();
-
-        if ($latestDocument) {
-            // Extract only the sequence number part (last 3 digits after the last dash)
-            $parts = explode('-', $latestDocument->order_number);
-            $lastPart = end($parts);
-            $nextNumber = intval($lastPart) + 1;
-        } else {
-            $nextNumber = 1;
-        }
-
-        // Format the order number based on department and document type
-        $departmentCode = $department->code;
-
-        // Format: DEPT-YEAR-NUMBER (e.g., OP-2024-001)
-        $orderNumber = sprintf('%s-%d-%03d', $departmentCode, $currentYear, $nextNumber);
-
-        return response()->json(['order_number' => $orderNumber]);
     }
 
     public function sendDocument(Request $request)
@@ -355,7 +434,10 @@ class UserController extends Controller
         // Convert string to boolean
         $autoGenerate = $request->input('auto_generate_order_number') === '1';
 
-        $validated = $request->validate([
+        // Check if user is from president's department (department_id = 1)
+        $isPresidentDepartment = Auth::user()->department_id === 1;
+
+        $validationRules = [
             'subject' => 'required|string|max:255',
             'order_number' => $autoGenerate ? 'nullable' : $orderNumberRule,
             'document_type' => 'required|in:special_order,order,memorandum,for_info',
@@ -367,19 +449,47 @@ class UserController extends Controller
             'initial_recipient_id' => 'nullable|exists:departments,id',
             'through_department_ids' => 'nullable|array',
             'through_department_ids.*' => 'exists:departments,id',
-            'auto_generate_order_number' => 'required|in:0,1'
-        ]);
+            'auto_generate_order_number' => 'required|in:0,1',
+        ];
+
+        // Add president-specific validation rules
+        if ($isPresidentDepartment) {
+            $validationRules['signatory'] = 'nullable|string|max:255';
+            $validationRules['request_from'] = 'nullable|string|max:255';
+            $validationRules['request_from_department'] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($validationRules);
 
         // If auto-generate is enabled, generate the order number
         if ($autoGenerate) {
-            $orderNumberRequest = new Request(['document_type' => $validated['document_type']]);
-            $orderNumberResponse = $this->generateOrderNumber($orderNumberRequest);
-            $orderNumberData = json_decode($orderNumberResponse->getContent(), true);
-            $validated['order_number'] = $orderNumberData['order_number'];
+            try {
+                $orderNumberRequest = new Request(['document_type' => $validated['document_type']]);
+                $orderNumberResponse = $this->generateOrderNumber($orderNumberRequest);
+
+                if ($orderNumberResponse->getStatusCode() !== 200) {
+                    throw new Exception('Failed to generate order number');
+                }
+
+                $orderNumberData = json_decode($orderNumberResponse->getContent(), true);
+                $validated['order_number'] = $orderNumberData['order_number'];
+
+                Log::info('Order number generated for document submission', [
+                    'user_id' => Auth::id(),
+                    'order_number' => $validated['order_number'],
+                    'document_type' => $validated['document_type']
+                ]);
+            } catch (Exception $e) {
+                Log::error('Failed to generate order number during document submission', [
+                    'error' => $e->getMessage(),
+                    'user_id' => Auth::id()
+                ]);
+                throw new Exception('Failed to generate order number. Please try again.');
+            }
         }
 
         // Create the document
-        $document = Document::create([
+        $documentData = [
             'owner_id' => Auth::id(),
             'department_id' => $departmentId,
             'subject' => $validated['subject'],
@@ -388,7 +498,31 @@ class UserController extends Controller
             'description' => $validated['description'],
             'through_department_ids' => $request->input('through_department_ids', []),
             'status' => 'pending',
-        ]);
+        ];
+
+        // Add president-specific fields only if user is from president's department
+        if ($isPresidentDepartment) {
+            $documentData['signatory'] = $request->input('signatory');
+            $documentData['request_from'] = $request->input('request_from');
+            $documentData['request_from_department'] = $request->input('request_from_department');
+        }
+
+        // Final check to ensure order number is unique
+        $existingDocument = Document::where('order_number', $validated['order_number'])
+            ->where('department_id', $departmentId)
+            ->whereYear('created_at', $currentYear)
+            ->first();
+
+        if ($existingDocument) {
+            Log::error('Duplicate order number detected before document creation', [
+                'order_number' => $validated['order_number'],
+                'department_id' => $departmentId,
+                'user_id' => Auth::id()
+            ]);
+            throw new Exception('Duplicate order number detected. Please try again.');
+        }
+
+        $document = Document::create($documentData);
 
         // Recipient logic
         if ($validated['document_type'] === 'for_info') {
@@ -530,8 +664,20 @@ class UserController extends Controller
         return redirect()->route('users.documents')->with('success', 'Document sent successfully.');
 
         } catch (\Throwable $th) {
+            Log::error('Error in sendDocument', [
+                'error' => $th->getMessage(),
+                'user_id' => Auth::id(),
+                'request_data' => $request->all()
+            ]);
+
+            // Handle validation errors specifically
+            if ($th instanceof ValidationException) {
+                return back()->withErrors($th->errors());
+            }
+
+            // Handle other exceptions
             return back()->withErrors([
-                'message' => $th->getMessage(),
+                'message' => 'An error occurred while submitting the document. Please try again.',
             ]);
         }
     }
@@ -967,21 +1113,6 @@ class UserController extends Controller
         // 1. Find the document by barcode
         $document = Document::where('barcode_value', $barcode)->first();
 
-        // Debug logging for troubleshooting
-        Log::info('ConfirmReceive Debug', [
-            'user_id' => $user->id,
-            'department_id' => $departmentId,
-            'document_id' => $document ? $document->id : null,
-            'pending_recipient_exists' => $document ? DocumentRecipient::where('document_id', $document->id)
-                ->where('department_id', $departmentId)
-                ->where('status', 'pending')
-                ->exists() : null,
-            'pending_recipient_row' => $document ? DocumentRecipient::where('document_id', $document->id)
-                ->where('department_id', $departmentId)
-                ->where('status', 'pending')
-                ->first() : null,
-        ]);
-
         if (!$document) {
             throw ValidationException::withMessages([
                 'barcode_value' => ['Document not found.']
@@ -1057,6 +1188,9 @@ class UserController extends Controller
         } else if ($document->status === 'approved') {
             $document->status = 'approved';
             $document->save();
+        } else if ($document->status === 'rejected') {
+            $document->status = 'rejected';
+            $document->save();
         } else {
             $document->status = 'in_review';
             $document->save();
@@ -1065,6 +1199,7 @@ class UserController extends Controller
         // Mark as received
         $recipient->status = 'received';
         $recipient->responded_at = now();
+        $recipient->received_at = now();
         $recipient->received_by = $user->id;
         $recipient->save();
 

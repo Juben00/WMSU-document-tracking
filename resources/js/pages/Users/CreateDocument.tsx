@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '@/components/User/navbar';
 import { useForm, router } from '@inertiajs/react';
 import { User } from '@/types';
@@ -27,6 +27,9 @@ type FormData = {
     initial_recipient_id: number | null; // department ID
     through_department_ids: number[]; // department IDs for through
     auto_generate_order_number: boolean;
+    signatory: string;
+    request_from: string;
+    request_from_department: string;
 }
 
 interface Props {
@@ -47,7 +50,6 @@ interface Props {
 
 
 const CreateDocument = ({ auth, departments }: Props) => {
-    // Use a ref to store object URLs for cleanup
     const fileObjectUrls = useRef<string[]>([]);
     const [filePreviews, setFilePreviews] = useState<Array<{ type: 'image' | 'file', value: string, name: string }>>([]);
     const [sendToId, setSendToId] = useState<number | null>(null);
@@ -65,41 +67,119 @@ const CreateDocument = ({ auth, departments }: Props) => {
         initial_recipient_id: null,
         through_department_ids: [],
         auto_generate_order_number: false,
+        signatory: '',
+        request_from: '',
+        request_from_department: '',
     });
 
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+    const generateOrderNumberTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isGeneratingRef = useRef(false);
+    const presidentDepartmentId = 1;
+    const isPresidentDepartment = auth.user.department_id === presidentDepartmentId;
 
     // Function to generate auto order number
-    const generateOrderNumber = async () => {
-        if (!data.document_type) return;
+    const generateOrderNumber = async (retryCount = 0) => {
+        if (!data.document_type) {
+            console.warn('Document type is required to generate order number');
+            return;
+        }
 
+        // Prevent multiple simultaneous requests
+        if (isGeneratingRef.current) {
+            console.warn('Order number generation already in progress');
+            return;
+        }
+
+        isGeneratingRef.current = true;
         setIsGeneratingOrderNumber(true);
+
         try {
+            // Get CSRF token with fallback
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+
             const response = await fetch(route('users.documents.generate-order-number'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     document_type: data.document_type,
                 }),
             });
 
-            if (response.ok) {
-                const result = await response.json();
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.order_number) {
                 setData('order_number', result.order_number);
+            } else {
+                throw new Error('No order number received from server');
             }
         } catch (error) {
             console.error('Error generating order number:', error);
+
+            // Retry logic for network errors or 5xx server errors
+            const shouldRetry = retryCount < 2 && (
+                error instanceof Error && (
+                    error.message.includes('NetworkError') ||
+                    error.message.includes('fetch') ||
+                    error.message.includes('500') ||
+                    error.message.includes('502') ||
+                    error.message.includes('503') ||
+                    error.message.includes('504') ||
+                    error.message.includes('Duplicate order number')
+                )
+            );
+
+            if (shouldRetry) {
+                console.log(`Retrying order number generation (attempt ${retryCount + 1})`);
+                setTimeout(() => {
+                    generateOrderNumber(retryCount + 1);
+                }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+                return;
+            }
+
+            // More specific error handling
+            let errorMessage = 'Failed to generate order number. Please try again.';
+
+            if (error instanceof Error) {
+                if (error.message.includes('CSRF token')) {
+                    errorMessage = 'Session expired. Please refresh the page and try again.';
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = 'You are not authorized to perform this action.';
+                } else if (error.message.includes('500')) {
+                    errorMessage = 'Server error occurred. Please try again later.';
+                } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (error.message.includes('Duplicate order number')) {
+                    errorMessage = 'A duplicate order number was detected. Please try again.';
+                }
+            }
+
             Swal.fire({
                 icon: 'error',
-                title: 'Generation Failed',
-                text: 'Failed to generate order number. Please try again.',
+                title: 'Generation Failed. Please refresh the page and try again.',
+                text: errorMessage,
                 confirmButtonColor: '#b91c1c',
             });
-            window.location.reload();
+
+            // Only reload on critical errors
+            if (error instanceof Error &&
+                (error.message.includes('CSRF token') || error.message.includes('401') || error.message.includes('403'))) {
+                window.location.reload();
+            }
         } finally {
+            isGeneratingRef.current = false;
             setIsGeneratingOrderNumber(false);
         }
     };
@@ -107,15 +187,45 @@ const CreateDocument = ({ auth, departments }: Props) => {
     // Auto-generate order number when document type changes and auto-generate is enabled
     useEffect(() => {
         if (data.auto_generate_order_number && data.document_type) {
-            generateOrderNumber();
+            // Clear existing timeout
+            if (generateOrderNumberTimeoutRef.current) {
+                clearTimeout(generateOrderNumberTimeoutRef.current);
+            }
+
+            // Set new timeout
+            generateOrderNumberTimeoutRef.current = setTimeout(() => {
+                generateOrderNumber();
+            }, 500);
         }
-    }, [data.document_type]);
+
+        // Cleanup timeout on unmount or dependency change
+        return () => {
+            if (generateOrderNumberTimeoutRef.current) {
+                clearTimeout(generateOrderNumberTimeoutRef.current);
+            }
+        };
+    }, [data.document_type, data.auto_generate_order_number]);
 
     // Handle auto-generation toggle changes
     useEffect(() => {
         if (data.auto_generate_order_number && data.document_type) {
-            generateOrderNumber();
+            // Clear existing timeout
+            if (generateOrderNumberTimeoutRef.current) {
+                clearTimeout(generateOrderNumberTimeoutRef.current);
+            }
+
+            // Set new timeout
+            generateOrderNumberTimeoutRef.current = setTimeout(() => {
+                generateOrderNumber();
+            }, 500);
         }
+
+        // Cleanup timeout on unmount or dependency change
+        return () => {
+            if (generateOrderNumberTimeoutRef.current) {
+                clearTimeout(generateOrderNumberTimeoutRef.current);
+            }
+        };
     }, [data.auto_generate_order_number]);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -209,6 +319,19 @@ const CreateDocument = ({ auth, departments }: Props) => {
         // Add order number if manually entered
         if (!data.auto_generate_order_number && data.order_number) {
             formData.append('order_number', data.order_number);
+        }
+
+        // Add president-specific fields if user is from president's department
+        if (isPresidentDepartment) {
+            if (data.signatory) {
+                formData.append('signatory', data.signatory);
+            }
+            if (data.request_from) {
+                formData.append('request_from', data.request_from);
+            }
+            if (data.request_from_department) {
+                formData.append('request_from_department', data.request_from_department);
+            }
         }
 
         // Recipients
@@ -432,6 +555,10 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                                             checked={data.auto_generate_order_number}
                                                             onChange={() => {
                                                                 setData('auto_generate_order_number', true);
+                                                                // Clear existing timeout and generate immediately
+                                                                if (generateOrderNumberTimeoutRef.current) {
+                                                                    clearTimeout(generateOrderNumberTimeoutRef.current);
+                                                                }
                                                                 generateOrderNumber();
                                                             }}
                                                             className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
@@ -445,7 +572,13 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                                 {data.auto_generate_order_number && (
                                                     <button
                                                         type="button"
-                                                        onClick={generateOrderNumber}
+                                                        onClick={() => {
+                                                            // Clear existing timeout and generate immediately
+                                                            if (generateOrderNumberTimeoutRef.current) {
+                                                                clearTimeout(generateOrderNumberTimeoutRef.current);
+                                                            }
+                                                            generateOrderNumber();
+                                                        }}
                                                         disabled={isGeneratingOrderNumber}
                                                         className="flex items-center gap-2 px-3 py-1.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
@@ -543,6 +676,55 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     />
                                     {errors.description && <div className="text-red-500 text-xs mt-1">{errors.description}</div>}
                                 </div>
+
+                                {isPresidentDepartment && (
+                                    <>
+                                        {/* Signatory */}
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                            <label htmlFor="signatory" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Signatory </label>
+                                            <Input
+                                                type="text"
+                                                name="signatory"
+                                                id="signatory"
+                                                placeholder="Enter signatory"
+                                                className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                value={data.signatory}
+                                                onChange={e => setData('signatory', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                            {/* Request From */}
+                                            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                                <label htmlFor="request_from" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Request From</label>
+                                                <Input
+                                                    type="text"
+                                                    name="request_from"
+                                                    id="request_from"
+                                                    placeholder="Enter request from"
+                                                    className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                    value={data.request_from}
+                                                    onChange={e => setData('request_from', e.target.value)}
+                                                />
+                                            </div>
+
+                                            {/* Request From Department */}
+                                            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                                <label htmlFor="request_from_department" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Request From Department</label>
+                                                <Input
+                                                    type="text"
+                                                    name="request_from_department"
+                                                    id="request_from_department"
+                                                    placeholder="Enter request from department"
+                                                    className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                    value={data.request_from_department}
+                                                    onChange={e => setData('request_from_department', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </form>
                         </div>
                     </div>

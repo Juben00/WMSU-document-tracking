@@ -15,6 +15,7 @@ class DocumentRecipient extends Model
         'status',
         'comments',
         'responded_at',
+        'received_at',
         'sequence',
         'forwarded_by',
         'forwarded_to',
@@ -24,6 +25,7 @@ class DocumentRecipient extends Model
 
     protected $casts = [
         'responded_at' => 'datetime',
+        'received_at' => 'datetime',
         'is_active' => 'boolean',
     ];
 

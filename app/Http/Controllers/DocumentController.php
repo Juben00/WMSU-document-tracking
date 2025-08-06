@@ -89,7 +89,8 @@ class DocumentController extends Controller
             'sequence' => $nextSequence,
             'is_active' => true,
             'final_recipient_department_id' => $finalRecipientId,
-            'responded_at' => null
+            'responded_at' => null,
+            'received_at' => null
         ]);
 
         // Get the newly created recipient (the one just forwarded to)
@@ -417,8 +418,11 @@ class DocumentController extends Controller
             ->orderByDesc('sequence')
             ->first();
         if ($documentRecipient) {
-            $documentRecipient->update(['status' => 'received']);
-            $documentRecipient->update(['responded_at' => now()]);
+            $documentRecipient->update([
+                'status' => 'received',
+                'responded_at' => now(),
+                'received_at' => now()
+            ]);
         }
 
         // Check if all recipients have received the document and if the document is for_info, then update the document status to received

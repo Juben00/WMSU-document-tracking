@@ -10,6 +10,7 @@ import {
     BarChart3,
     FileText,
     Hash,
+    AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -29,6 +30,9 @@ interface Document {
     sequence?: number
     user_id?: number
     department_id?: number
+    received_at?: string
+    is_overstayed?: boolean
+    days_overstayed?: number
 }
 
 interface DocumentTableProps {
@@ -41,11 +45,13 @@ interface DocumentTableProps {
 }
 
 const statusIcons: Record<string, React.ReactNode> = {
-    approved: <FileCheck2 className="w-4 h-4 text-emerald-600" />,
-    pending: <Clock className="w-4 h-4 text-amber-600" />,
-    rejected: <XCircle className="w-4 h-4 text-red-600" />,
-    returned: <Undo2 className="w-4 h-4 text-orange-600" />,
+    approved: <FileCheck2 className="w-4 h-4 text-white" />,
+    pending: <Clock className="w-4 h-4 text-white" />,
+    rejected: <XCircle className="w-4 h-4 text-white" />,
+    returned: <Undo2 className="w-4 h-4 text-white" />,
+    in_review: <Clock className="w-4 h-4 text-white" />,
 }
+
 
 const DocumentTable: React.FC<DocumentTableProps> = ({
     documents,
@@ -69,6 +75,8 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
         )
     }
 
+    console.log(documents);
+
     return (
         <div className="overflow-x-auto">
             <Table className="w-full">
@@ -78,6 +86,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
                         <TableHead className="font-semibold text-slate-900 dark:text-white">Barcode</TableHead>
                         <TableHead className="font-semibold text-slate-900 dark:text-white">Type</TableHead>
                         <TableHead className="font-semibold text-slate-900 dark:text-white">Status</TableHead>
+                        <TableHead className="font-semibold text-slate-900 dark:text-white">Overstayed</TableHead>
                         <TableHead className="font-semibold text-slate-900 dark:text-white">Date</TableHead>
                         <TableHead className="font-semibold text-slate-900 dark:text-white">Files</TableHead>
                         {activeTab === "archived" && (
@@ -88,7 +97,13 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
                 </TableHeader>
                 <TableBody>
                     {documents.map((doc) => (
-                        <TableRow key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        <TableRow
+                            key={doc.id}
+                            className={`hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${doc.is_overstayed && doc.recipient_status === 'received'
+                                ? 'bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500'
+                                : ''
+                                }`}
+                        >
                             <TableCell className="py-4">
                                 <div className="space-y-1">
                                     <h4 className="font-medium text-slate-900 dark:text-white line-clamp-2">
@@ -122,6 +137,16 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
                                     <span className="mr-1">{statusIcons[doc.status]}</span>
                                     {doc.status.charAt(0).toUpperCase() + doc.status.slice(1).replace("_", " ")}
                                 </Badge>
+                            </TableCell>
+                            <TableCell>
+                                {doc.is_overstayed && doc.document_type !== 'for_info' && doc.recipient_status === 'received' ? (
+                                    <Badge variant="destructive" className="text-xs">
+                                        <AlertTriangle className="w-3 h-3 mr-1" />
+                                        {Math.floor(doc.days_overstayed || 0)} day{Math.floor(doc.days_overstayed || 0) !== 1 ? 's' : ''} overstayed
+                                    </Badge>
+                                ) : (
+                                    <span className="text-slate-400 text-xs">-</span>
+                                )}
                             </TableCell>
                             <TableCell className="text-sm text-slate-600 dark:text-slate-400">
                                 {new Date(doc.created_at).toLocaleDateString("en-US", {
