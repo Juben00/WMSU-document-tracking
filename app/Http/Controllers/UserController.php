@@ -677,7 +677,7 @@ class UserController extends Controller
 
             // Handle other exceptions
             return back()->withErrors([
-                'message' => 'An error occurred while submitting the document. Please try again.',
+                'message' => $th->getMessage(),
             ]);
         }
     }
