@@ -14,6 +14,7 @@ import {
     Calendar,
     Archive,
     X,
+    AlertTriangle,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +40,9 @@ interface Document {
     sequence?: number
     user_id?: number
     department_id?: number
+    received_at?: string
+    is_overstayed?: boolean
+    days_overstayed?: number
 }
 
 interface Props {
@@ -48,6 +52,14 @@ interface Props {
             id: number
         }
     }
+}
+
+interface TabConfig {
+    id: string
+    label: string
+    icon: any
+    count: number
+    overstayedCount?: number
 }
 
 
@@ -60,6 +72,7 @@ const Documents = ({ documents, auth }: Props) => {
     const [sortBy, setSortBy] = useState("latest")
     const [fiscalYearFilter, setFiscalYearFilter] = useState("all")
     const [archivedFilter, setArchivedFilter] = useState("all")
+    const [overstayedFilter, setOverstayedFilter] = useState("all")
     const [showBarcodeModal, setShowBarcodeModal] = useState(false)
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -282,8 +295,27 @@ const Documents = ({ documents, auth }: Props) => {
             }
         }
 
-        // Sort by date
+        // Filter by overstayed status (only for received tab)
+        if (activeTab === "received" && overstayedFilter !== "all") {
+            if (overstayedFilter === "overstayed") {
+                filtered = filtered.filter((doc) => doc.is_overstayed === true)
+            } else if (overstayedFilter === "not_overstayed") {
+                filtered = filtered.filter((doc) => doc.is_overstayed !== true)
+            }
+        }
+
+        // Sort by overstayed status first, then by date
         filtered.sort((a, b) => {
+            // First, prioritize overstayed documents
+            if (a.is_overstayed && !b.is_overstayed) return -1
+            if (!a.is_overstayed && b.is_overstayed) return 1
+
+            // If both are overstayed, sort by days overstayed (most overstayed first)
+            if (a.is_overstayed && b.is_overstayed) {
+                return (b.days_overstayed || 0) - (a.days_overstayed || 0)
+            }
+
+            // Then sort by date
             const dateA = new Date(a.created_at).getTime()
             const dateB = new Date(b.created_at).getTime()
             return sortBy === "latest" ? dateB - dateA : dateA - dateB
@@ -307,8 +339,17 @@ const Documents = ({ documents, auth }: Props) => {
         )
     }
 
+    // Count overstayed documents
+    const overstayedCount = received.filter(doc => doc.is_overstayed && doc.recipient_status === 'received').length
+
     const tabConfig = [
-        { id: "received", label: "Received", icon: Users, count: received.length },
+        {
+            id: "received",
+            label: "Received",
+            icon: Users,
+            count: received.length,
+            overstayedCount: overstayedCount
+        },
         { id: "sent", label: "Sent", icon: FileText, count: sent.length },
         { id: "archived", label: "Archived", icon: Archive, count: archived.length },
     ]
@@ -495,21 +536,39 @@ const Documents = ({ documents, auth }: Props) => {
                                         </SelectContent>
                                     </Select>
                                 )}
+
+                                {/* Overstayed Filter - Only show for received tab */}
+                                <div className="gap-4 bg-white dark:bg-gray-800 h-12 flex items-center justify-center border-2 ps-4 border-gray-200 dark:border-gray-700 rounded-lg w-fit">
+                                    {activeTab === "received" && (
+                                        <Select value={overstayedFilter} onValueChange={setOverstayedFilter}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-800 w-48 border-none">
+                                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                                <SelectValue placeholder="All Documents" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Documents</SelectItem>
+                                                <SelectItem value="overstayed">Overstayed</SelectItem>
+                                                <SelectItem value="not_overstayed">Not Overstayed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Sort</span>
+                                        <Select value={sortBy} onValueChange={setSortBy}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-800 w-48 border-none">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="latest">Latest First</SelectItem>
+                                                <SelectItem value="oldest">Oldest First</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Sort Options */}
-                            <div className="gap-4 bg-white dark:bg-gray-800 h-12 flex items-center justify-center border-2 ps-4 border-gray-200 dark:border-gray-700 rounded-lg w-fit">
-                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Sort</span>
-                                <Select value={sortBy} onValueChange={setSortBy}>
-                                    <SelectTrigger className="bg-white dark:bg-gray-800 w-48 border-none">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="latest">Latest First</SelectItem>
-                                        <SelectItem value="oldest">Oldest First</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+
                         </CardContent>
                     </Card>
 
@@ -529,6 +588,14 @@ const Documents = ({ documents, auth }: Props) => {
                                                 ? "Archived Documents"
                                                 : "Published Documents"}
                                 </h2>
+                                {activeTab === "received" && overstayedCount > 0 && (
+                                    <div className="ml-auto">
+                                        <Badge variant="destructive" className="text-sm">
+                                            <AlertTriangle className="w-4 h-4 mr-1" />
+                                            {overstayedCount} document{overstayedCount !== 1 ? 's' : ''} overstayed
+                                        </Badge>
+                                    </div>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent>

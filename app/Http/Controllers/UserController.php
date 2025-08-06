@@ -140,7 +140,7 @@ class UserController extends Controller
         ->with(['recipients' => function($q) {
             $q->where('received_by', Auth::id())
               ->where('status', 'received')
-              ->select('id', 'document_id', 'department_id', 'status', 'received_by', 'sequence');
+              ->select('id', 'document_id', 'department_id', 'status', 'received_by', 'sequence', 'received_at');
         }, 'files:id,document_id'])
         ->get();
 
@@ -173,6 +173,17 @@ class UserController extends Controller
             $doc->sequence = $latestRecipient ? $latestRecipient->sequence : null;
             $doc->recipient_status = $latestRecipient ? $latestRecipient->status : null;
             $doc->recipient_received_by = $latestRecipient ? $latestRecipient->received_by : null;
+            $doc->received_at = $latestRecipient ? $latestRecipient->received_at : null;
+
+            // Calculate if document is overstayed (more than 1 day)
+            $doc->is_overstayed = false;
+            if ($latestRecipient && $latestRecipient->received_at && $latestRecipient->status === 'received') {
+                $receivedAt = \Carbon\Carbon::parse($latestRecipient->received_at);
+                $now = \Carbon\Carbon::now();
+                $doc->is_overstayed = $receivedAt->diffInDays($now) >= 1;
+                $doc->days_overstayed = $receivedAt->diffInDays($now);
+            }
+
             return $doc;
         });
 
@@ -1188,6 +1199,7 @@ class UserController extends Controller
         // Mark as received
         $recipient->status = 'received';
         $recipient->responded_at = now();
+        $recipient->received_at = now();
         $recipient->received_by = $user->id;
         $recipient->save();
 
