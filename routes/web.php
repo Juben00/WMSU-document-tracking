@@ -89,6 +89,9 @@ Route::middleware(['auth', 'verified', 'require_password_change'])->group(functi
     // Test CSRF token endpoint
     Route::post('/users/test-csrf', [UserController::class, 'testCsrf'])->name('users.test-csrf');
 
+    // Refresh CSRF token endpoint
+    Route::get('/users/refresh-csrf', [UserController::class, 'refreshCsrf'])->name('users.refresh-csrf');
+
     Route::get('/users/documents/{document}/edit', [UserController::class, 'editDocument'])->name('users.documents.edit');
     Route::put('/users/documents/{document}', [UserController::class, 'updateDocument'])->name('users.documents.update');
 

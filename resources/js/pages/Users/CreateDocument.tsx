@@ -96,6 +96,14 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
+            // Ensure CSRF token is available before making request
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.log('Waiting for CSRF token to be available...');
+                // Wait a bit for the token to be available (common on first login)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
             // Use configured axios instance which handles CSRF tokens automatically
             const response = await axios.post(route('users.documents.generate-order-number'), {
                 document_type: data.document_type,
@@ -110,6 +118,30 @@ const CreateDocument = ({ auth, departments }: Props) => {
             }
         } catch (error: any) {
             console.error('Error generating order number:', error);
+
+            // Handle CSRF token issues specifically
+            if (error.response?.status === 419) {
+                console.log('CSRF token issue detected, attempting to refresh...');
+                try {
+                    // Try to refresh the CSRF token
+                    const refreshResponse = await axios.get(route('users.refresh-csrf'));
+                    if (refreshResponse.data.success) {
+                        console.log('CSRF token refreshed successfully, retrying...');
+                        // Update the meta tag with the new token
+                        const metaTag = document.querySelector('meta[name="csrf-token"]');
+                        if (metaTag) {
+                            metaTag.setAttribute('content', refreshResponse.data.csrf_token);
+                        }
+                        // Retry the original request
+                        setTimeout(() => {
+                            generateOrderNumber(retryCount);
+                        }, 500);
+                        return;
+                    }
+                } catch (refreshError) {
+                    console.error('Failed to refresh CSRF token:', refreshError);
+                }
+            }
 
             // Retry logic for network errors or 5xx server errors
             const shouldRetry = retryCount < 2 && (

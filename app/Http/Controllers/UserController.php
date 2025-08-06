@@ -285,13 +285,35 @@ class UserController extends Controller
                 return response()->json(['error' => 'User not authenticated.'], 401);
             }
 
-            // Log CSRF token validation for debugging
-            Log::info('CSRF token validation passed', [
+            // Enhanced CSRF token validation for debugging
+            $csrfToken = $request->header('X-CSRF-TOKEN');
+            $hasCsrfToken = $request->hasHeader('X-CSRF-TOKEN');
+            $sessionId = $request->session()->getId();
+
+            Log::info('CSRF token validation details', [
                 'user_id' => Auth::id(),
-                'has_csrf_token' => $request->hasHeader('X-CSRF-TOKEN'),
-                'csrf_token_length' => strlen($request->header('X-CSRF-TOKEN', '')),
-                'session_id' => $request->session()->getId()
+                'has_csrf_token' => $hasCsrfToken,
+                'csrf_token_length' => $csrfToken ? strlen($csrfToken) : 0,
+                'session_id' => $sessionId,
+                'session_exists' => $request->session()->isStarted(),
+                'user_agent' => $request->userAgent(),
+                'ip' => $request->ip()
             ]);
+
+            // Additional session validation for first login scenarios
+            if (!$hasCsrfToken || !$csrfToken) {
+                Log::warning('CSRF token missing on order number generation request', [
+                    'user_id' => Auth::id(),
+                    'session_id' => $sessionId,
+                    'headers' => $request->headers->all()
+                ]);
+
+                // Return a more specific error for CSRF issues
+                return response()->json([
+                    'error' => 'Session validation failed. Please refresh the page and try again.',
+                    'code' => 'CSRF_MISSING'
+                ], 419);
+            }
 
             $request->validate([
                 'document_type' => 'required|in:special_order,order,memorandum,for_info',
@@ -514,6 +536,40 @@ class UserController extends Controller
 
         } catch (Exception $e) {
             Log::error('Error in department test', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id()
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function refreshCsrf(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json(['error' => 'User not authenticated.'], 401);
+            }
+
+            // Regenerate CSRF token
+            $request->session()->regenerateToken();
+
+            Log::info('CSRF token refreshed', [
+                'user_id' => Auth::id(),
+                'session_id' => $request->session()->getId(),
+                'new_token' => csrf_token()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'CSRF token refreshed successfully',
+                'csrf_token' => csrf_token(),
+                'user_id' => Auth::id()
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error refreshing CSRF token', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id()
