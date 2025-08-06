@@ -323,21 +323,32 @@ class UserController extends Controller
                 return response()->json(['error' => 'User does not have a department assigned.'], 400);
             }
 
-            // Use database transaction to prevent race conditions
-            return DB::transaction(function () use ($departmentId, $department, $documentType, $currentYear, $currentUser) {
+            // Simplified approach without database locking
+            try {
                 // Check if this is the President's office (OP)
                 $isPresidentOffice = $department->code === 'OP';
 
+                Log::info('Starting order number generation', [
+                    'department_id' => $departmentId,
+                    'department_code' => $department->code,
+                    'is_president_office' => $isPresidentOffice,
+                    'document_type' => $documentType,
+                    'current_year' => $currentYear
+                ]);
+
                 // Get the latest order number for this department and document type
                 $query = Document::where('department_id', $departmentId)
-                    ->whereYear('created_at', $currentYear)
-                    ->lockForUpdate(); // Lock the rows to prevent race conditions
+                    ->whereYear('created_at', $currentYear);
 
                 if ($isPresidentOffice) {
                     $query->where('document_type', $documentType);
                 }
 
                 $latestDocument = $query->orderBy('order_number', 'desc')->first();
+
+                Log::info('Latest document found', [
+                    'latest_document' => $latestDocument ? $latestDocument->order_number : 'none'
+                ]);
 
                 if ($latestDocument) {
                     // Extract only the sequence number part (last 3 digits after the last dash)
@@ -388,7 +399,13 @@ class UserController extends Controller
                 ]);
 
                 return response()->json(['order_number' => $orderNumber]);
-            });
+            } catch (Exception $e) {
+                Log::error('Error in order number generation', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
 
         } catch (ValidationException $e) {
             Log::warning('Validation error in generateOrderNumber', [
@@ -400,8 +417,12 @@ class UserController extends Controller
         } catch (Exception $e) {
             Log::error('Error generating order number', [
                 'error' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id(),
-                'document_type' => $request->input('document_type')
+                'document_type' => $request->input('document_type'),
+                'department_id' => Auth::user()?->department_id,
+                'department_code' => Auth::user()?->department?->code,
+                'current_year' => now()->year
             ]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -434,6 +455,47 @@ class UserController extends Controller
         } catch (Exception $e) {
             Log::error('Error in CSRF test', [
                 'error' => $e->getMessage(),
+                'user_id' => Auth::id()
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function testDepartment(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json(['error' => 'User not authenticated.'], 401);
+            }
+
+            $user = Auth::user();
+            $department = $user->department;
+
+            Log::info('Department test endpoint accessed', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'department_id' => $user->department_id,
+                'department_exists' => $department ? 'yes' : 'no',
+                'department_code' => $department ? $department->code : 'null',
+                'department_name' => $department ? $department->name : 'null'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'user_id' => $user->id,
+                'department_id' => $user->department_id,
+                'department' => $department ? [
+                    'id' => $department->id,
+                    'name' => $department->name,
+                    'code' => $department->code
+                ] : null
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error in department test', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id()
             ]);
             return response()->json(['error' => $e->getMessage()], 500);
