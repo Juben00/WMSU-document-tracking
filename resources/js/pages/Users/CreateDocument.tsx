@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '@/components/User/navbar';
 import { useForm, router } from '@inertiajs/react';
+import axios from '@/lib/axios';
 import { User } from '@/types';
 import {
     Select,
@@ -95,50 +96,27 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
-            // Get CSRF token with fallback
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (!csrfToken) {
-                throw new Error('CSRF token not found');
-            }
-
-            const response = await fetch(route('users.documents.generate-order-number'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    document_type: data.document_type,
-                }),
+            // Use configured axios instance which handles CSRF tokens automatically
+            const response = await axios.post(route('users.documents.generate-order-number'), {
+                document_type: data.document_type,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const result = await response.json();
+            const result = response.data;
 
             if (result.order_number) {
                 setData('order_number', result.order_number);
             } else {
                 throw new Error('No order number received from server');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error generating order number:', error);
 
             // Retry logic for network errors or 5xx server errors
             const shouldRetry = retryCount < 2 && (
-                error instanceof Error && (
-                    error.message.includes('NetworkError') ||
-                    error.message.includes('fetch') ||
-                    error.message.includes('500') ||
-                    error.message.includes('502') ||
-                    error.message.includes('503') ||
-                    error.message.includes('504') ||
-                    error.message.includes('Duplicate order number')
-                )
+                error.code === 'NETWORK_ERROR' ||
+                error.message.includes('Network Error') ||
+                error.response?.status >= 500 ||
+                error.response?.data?.message?.includes('Duplicate order number')
             );
 
             if (shouldRetry) {
@@ -152,32 +130,26 @@ const CreateDocument = ({ auth, departments }: Props) => {
             // More specific error handling
             let errorMessage = 'Failed to generate order number. Please try again.';
 
-            if (error instanceof Error) {
-                if (error.message.includes('CSRF token')) {
-                    errorMessage = 'Session expired. Please refresh the page and try again.';
-                } else if (error.message.includes('401') || error.message.includes('403')) {
-                    errorMessage = 'You are not authorized to perform this action.';
-                } else if (error.message.includes('500')) {
-                    errorMessage = 'Server error occurred. Please try again later.';
-                } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
-                    errorMessage = 'Network error. Please check your connection and try again.';
-                } else if (error.message.includes('Duplicate order number')) {
-                    errorMessage = 'A duplicate order number was detected. Please try again.';
-                }
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                errorMessage = 'You are not authorized to perform this action.';
+            } else if (error.response?.status >= 500) {
+                errorMessage = 'Server error occurred. Please try again later.';
+            } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+                errorMessage = 'Network error. Please check your connection and try again.';
+            } else if (error.response?.data?.message?.includes('Duplicate order number')) {
+                errorMessage = 'A duplicate order number was detected. Please try again.';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
             }
 
             Swal.fire({
                 icon: 'error',
-                title: 'Generation Failed. Please refresh the page and try again.',
+                title: 'Generation Failed',
                 text: errorMessage,
                 confirmButtonColor: '#b91c1c',
             });
-
-            // Only reload on critical errors
-            if (error instanceof Error &&
-                (error.message.includes('CSRF token') || error.message.includes('401') || error.message.includes('403'))) {
-                window.location.reload();
-            }
         } finally {
             isGeneratingRef.current = false;
             setIsGeneratingOrderNumber(false);

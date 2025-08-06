@@ -276,14 +276,37 @@ class UserController extends Controller
     public function generateOrderNumber(Request $request)
     {
         try {
+            // Check if user is authenticated first
+            if (!Auth::check()) {
+                Log::warning('Unauthenticated user attempted to generate order number', [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent()
+                ]);
+                return response()->json(['error' => 'User not authenticated.'], 401);
+            }
+
+            // Log CSRF token validation for debugging
+            Log::info('CSRF token validation passed', [
+                'user_id' => Auth::id(),
+                'has_csrf_token' => $request->hasHeader('X-CSRF-TOKEN'),
+                'csrf_token_length' => strlen($request->header('X-CSRF-TOKEN', '')),
+                'session_id' => $request->session()->getId()
+            ]);
+
             $request->validate([
                 'document_type' => 'required|in:special_order,order,memorandum,for_info',
             ]);
 
             $currentUser = Auth::user();
 
-            if (!$currentUser) {
-                return response()->json(['error' => 'User not authenticated.'], 401);
+            // Additional session validation
+            if (!$currentUser || !$currentUser->is_active) {
+                Log::warning('Inactive or invalid user attempted to generate order number', [
+                    'user_id' => $currentUser?->id,
+                    'email' => $currentUser?->email,
+                    'is_active' => $currentUser?->is_active
+                ]);
+                return response()->json(['error' => 'User account is not active.'], 401);
             }
 
             $departmentId = $currentUser->department_id;
@@ -379,6 +402,39 @@ class UserController extends Controller
                 'error' => $e->getMessage(),
                 'user_id' => Auth::id(),
                 'document_type' => $request->input('document_type')
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function testCsrf(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json(['error' => 'User not authenticated.'], 401);
+            }
+
+            // Log CSRF token information
+            Log::info('CSRF test endpoint accessed', [
+                'user_id' => Auth::id(),
+                'has_csrf_token' => $request->hasHeader('X-CSRF-TOKEN'),
+                'csrf_token_length' => strlen($request->header('X-CSRF-TOKEN', '')),
+                'session_id' => $request->session()->getId(),
+                'all_headers' => $request->headers->all()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'CSRF token is valid',
+                'user_id' => Auth::id(),
+                'session_id' => $request->session()->getId()
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error in CSRF test', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id()
             ]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
