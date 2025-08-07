@@ -96,6 +96,8 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
+            console.log('Starting order number generation for document type:', data.document_type);
+
             // Ensure CSRF token is available before making request
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!csrfToken) {
@@ -109,15 +111,20 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 document_type: data.document_type,
             });
 
+            console.log('Order number generation response:', response.data);
+
             const result = response.data;
 
             if (result.order_number) {
                 setData('order_number', result.order_number);
+                console.log('Order number generated successfully:', result.order_number);
             } else {
                 throw new Error('No order number received from server');
             }
         } catch (error: any) {
             console.error('Error generating order number:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
 
             // Handle CSRF token issues specifically
             if (error.response?.status === 419) {
@@ -322,12 +329,8 @@ const CreateDocument = ({ auth, departments }: Props) => {
         formData.append('document_type', data.document_type);
         formData.append('description', data.description);
         formData.append('status', 'pending');
-        formData.append('auto_generate_order_number', data.auto_generate_order_number ? '1' : '0');
+        formData.append('order_number', data.order_number);
 
-        // Add order number if manually entered
-        if (!data.auto_generate_order_number && data.order_number) {
-            formData.append('order_number', data.order_number);
-        }
 
         // Add president-specific fields if user is from president's department
         if (isPresidentDepartment) {
@@ -377,14 +380,38 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     title: 'Document Submitted!',
                     text: 'Your document has been sent successfully.',
                     confirmButtonColor: '#b91c1c',
-                })
+                }).then(() => {
+                    // Redirect to documents page after success
+                    window.location.href = route('users.documents');
+                });
             },
             onError: (errors) => {
+                console.error('Document submission errors:', errors);
                 setIsSubmitting(false);
+
+                let errorMessage = 'Failed to submit document. Please try again.';
+
+                // Handle specific error types
+                if (errors.order_number) {
+                    errorMessage = errors.order_number;
+                } else if (errors.subject) {
+                    errorMessage = errors.subject;
+                } else if (errors.document_type) {
+                    errorMessage = errors.document_type;
+                } else if (errors.description) {
+                    errorMessage = errors.description;
+                } else if (errors.files) {
+                    errorMessage = errors.files;
+                } else if (errors.recipient_ids) {
+                    errorMessage = errors.recipient_ids;
+                } else if (errors.message) {
+                    errorMessage = errors.message;
+                }
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Failed to Submit Document',
-                    text: errors.message,
+                    text: errorMessage,
                     confirmButtonColor: '#b91c1c',
                 });
             }

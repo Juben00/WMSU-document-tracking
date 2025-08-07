@@ -370,7 +370,10 @@ class UserController extends Controller
                 $latestDocument = $query->orderBy('order_number', 'desc')->first();
 
                 Log::info('Latest document found', [
-                    'latest_document' => $latestDocument ? $latestDocument->order_number : 'none'
+                    'latest_document' => $latestDocument ? $latestDocument->order_number : 'none',
+                    'department_id' => $departmentId,
+                    'document_type' => $documentType,
+                    'is_president_office' => $isPresidentOffice
                 ]);
 
                 if ($latestDocument) {
@@ -388,8 +391,14 @@ class UserController extends Controller
                     }
 
                     $nextNumber = intval($lastPart) + 1;
+                    Log::info('Next number calculated', [
+                        'last_order_number' => $latestDocument->order_number,
+                        'last_part' => $lastPart,
+                        'next_number' => $nextNumber
+                    ]);
                 } else {
                     $nextNumber = 1;
+                    Log::info('No previous documents found, starting with number 1');
                 }
 
                 // Format the order number based on department and document type
@@ -625,15 +634,12 @@ class UserController extends Controller
             };
         }
 
-        // Convert string to boolean
-        $autoGenerate = $request->input('auto_generate_order_number') === '1';
-
         // Check if user is from president's department (department_id = 1)
         $isPresidentDepartment = Auth::user()->department_id === 1;
 
         $validationRules = [
             'subject' => 'required|string|max:255',
-            'order_number' => $autoGenerate ? 'nullable' : $orderNumberRule,
+            'order_number' => 'required|string|max:255',
             'document_type' => 'required|in:special_order,order,memorandum,for_info',
             'description' => 'nullable|string',
             'files' => 'required|array',
@@ -643,7 +649,6 @@ class UserController extends Controller
             'initial_recipient_id' => 'nullable|exists:departments,id',
             'through_department_ids' => 'nullable|array',
             'through_department_ids.*' => 'exists:departments,id',
-            'auto_generate_order_number' => 'required|in:0,1',
         ];
 
         // Add president-specific validation rules
@@ -654,33 +659,6 @@ class UserController extends Controller
         }
 
         $validated = $request->validate($validationRules);
-
-        // If auto-generate is enabled, generate the order number
-        if ($autoGenerate) {
-            try {
-                $orderNumberRequest = new Request(['document_type' => $validated['document_type']]);
-                $orderNumberResponse = $this->generateOrderNumber($orderNumberRequest);
-
-                if ($orderNumberResponse->getStatusCode() !== 200) {
-                    throw new Exception('Failed to generate order number');
-                }
-
-                $orderNumberData = json_decode($orderNumberResponse->getContent(), true);
-                $validated['order_number'] = $orderNumberData['order_number'];
-
-                Log::info('Order number generated for document submission', [
-                    'user_id' => Auth::id(),
-                    'order_number' => $validated['order_number'],
-                    'document_type' => $validated['document_type']
-                ]);
-            } catch (Exception $e) {
-                Log::error('Failed to generate order number during document submission', [
-                    'error' => $e->getMessage(),
-                    'user_id' => Auth::id()
-                ]);
-                throw new Exception('Failed to generate order number. Please try again.');
-            }
-        }
 
         // Create the document
         $documentData = [
@@ -736,11 +714,14 @@ class UserController extends Controller
             }
         } else {
             // For memorandum, order, special_order documents
-            $sendToDeptId = $request->input('recipient_ids')[0];
+            $sendToDeptId = $request->input('recipient_ids')[0] ?? null;
+
+            if (!$sendToDeptId) {
+                throw new Exception('Main recipient department is required for this document type.');
+            }
+
             $throughDeptIds = $request->input('through_department_ids', []);
 
-            // Get the sendToDeptId's office admin
-            // $officeAdmin = User::where('department_id', $sendToDeptId)->where('role', 'admin')->first();
             // Determine the initial recipient (first through department if any, otherwise the main recipient)
             $initialRecipientDeptId = !empty($throughDeptIds) ? $throughDeptIds[0] : $sendToDeptId;
 
@@ -819,6 +800,7 @@ class UserController extends Controller
 
         // Notify the document owner
         $document->owner->notify(new InAppNotification('Your document has been created and sent.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+
         // Notify all initial recipients
         if ($validated['document_type'] === 'for_info') {
             foreach ($validated['recipient_ids'] as $recipientDeptId) {
@@ -830,7 +812,7 @@ class UserController extends Controller
             }
         } else {
             // For memorandum, order, special_order documents
-            $sendToDeptId = $request->input('recipient_ids')[0];
+            $sendToDeptId = $request->input('recipient_ids')[0] ?? null;
             $throughDeptIds = $request->input('through_department_ids', []);
 
             if (!empty($throughDeptIds)) {
