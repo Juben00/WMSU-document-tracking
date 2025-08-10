@@ -8,7 +8,13 @@ import { PageProps as InertiaPageProps } from '@inertiajs/core';
 
 interface AuthUser {
     role?: string;
-    name?: string;
+    first_name?: string;
+    last_name?: string;
+    middle_name?: string;
+    suffix?: string;
+    gender?: string;
+    position?: string;
+    department_id?: number;
     email?: string;
 }
 
@@ -175,8 +181,8 @@ const Navbar = () => {
 
     // Get user display name and initials
     const getUserDisplayName = () => {
-        if (auth?.user?.name && auth.user.name.trim() !== '') {
-            return auth.user.name;
+        if (auth?.user?.first_name && auth.user.first_name.trim() !== '') {
+            return `${auth.user?.first_name} ${auth.user?.last_name}`;
         }
         // If no name, try to use email username as display name
         if (auth?.user?.email) {
@@ -187,10 +193,10 @@ const Navbar = () => {
     };
 
     const getUserInitials = () => {
-        const userName = auth?.user?.name;
+        const userName = `${auth.user?.first_name} ${auth.user?.last_name}`;
         if (userName && userName.trim() !== '') {
             // If name is available, use initials from the name
-            return getInitials(userName);
+            return getInitials(`${auth.user?.first_name} ${auth.user?.last_name}`);
         }
         // If no name, try to get initials from the email's username part
         const userEmail = auth?.user?.email;

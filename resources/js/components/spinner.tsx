@@ -14,7 +14,7 @@ const Spinner: React.FC<SpinnerProps> = ({
 }) => {
     const sizeClasses = {
         sm: 'w-16 h-16',
-        md: 'w-24 h-24',
+        md: 'w-34 h-34',
         lg: 'w-32 h-32',
         xl: 'w-40 h-40'
     };
@@ -57,10 +57,16 @@ const Spinner: React.FC<SpinnerProps> = ({
                         <p className={`text-white font-semibold ${textSizes[size]} animate-pulse`}>
                             {text}
                         </p>
-                        <div className="flex justify-center space-x-1 mt-2">
-                            <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="flex justify-center space-x-1 mt-4">
+                            <div className="w-3 h-3 bg-red-100 rounded-full animate-bounce"></div>
+                            <div className="w-3 h-3 bg-red-200 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-3 h-3 bg-red-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="w-3 h-3 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                            <div className="w-3 h-3 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+                            <div className="w-3 h-3 bg-red-700 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}></div>
+                            <div className="w-3 h-3 bg-red-800 rounded-full animate-bounce" style={{ animationDelay: '0.7s' }}></div>
+                            <div className="w-3 h-3 bg-red-900 rounded-full animate-bounce" style={{ animationDelay: '0.8s' }}></div>
                         </div>
                     </div>
                 )}

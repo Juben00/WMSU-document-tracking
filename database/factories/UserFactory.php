@@ -33,7 +33,6 @@ class UserFactory extends Factory
             'position' => $this->faker->jobTitle(),
             'department_id' => $this->faker->randomElement(Departments::pluck('id')),
             'role' => $this->faker->randomElement(['superadmin', 'admin', 'user']),
-            'avatar' => $this->faker->imageUrl(),
             'email' => $this->faker->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => Hash::make('superadmin'),

@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import { Plus, Trash2, Pencil, Eye } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, Users, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import EditDepartment from '@/components/Departments/EditDepartment';
@@ -15,6 +15,7 @@ import type { Departments } from '@/types';
 import AddDepartment from '@/components/Departments/AddDepartment';
 import Swal from 'sweetalert2';
 import Spinner from '@/components/spinner';
+import { Input } from '@/components/ui/input';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -37,6 +38,7 @@ export default function Departments({ departments, auth }: Props) {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Departments | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [filter, setFilter] = useState('');
 
     const { processing, delete: destroy, data, setData, post, errors, reset, put } = useForm({
         name: '',
@@ -93,7 +95,7 @@ export default function Departments({ departments, auth }: Props) {
             {processing && <Spinner />}
             <Head title="Departments Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
-                <div className="flex justify-between items-center">
+                <div className="flex gap-6 overflow-auto items-center w-full">
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">Departments Management</h1>
@@ -102,6 +104,13 @@ export default function Departments({ departments, auth }: Props) {
                             </p>
                         </div>
                     </div>
+
+                    {/* filter section */}
+                    <div className="flex items-center gap-2 flex-1">
+                        <p className="text-sm font-semibold dark:text-white">Search:</p>
+                        <Input type="text" placeholder="Search Department" onChange={(e) => setFilter(e.target.value)} value={filter} />
+                    </div>
+
                     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                         <DialogTrigger asChild>
                             <Button>
@@ -131,7 +140,12 @@ export default function Departments({ departments, auth }: Props) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {departments.map((department) => (
+                            {departments.filter((department) =>
+                                department.name.toLowerCase().includes(filter.toLowerCase()) ||
+                                department.code.toLowerCase().includes(filter.toLowerCase()) ||
+                                department.description?.toLowerCase().includes(filter.toLowerCase()) ||
+                                department.type.toLowerCase().includes(filter.toLowerCase())
+                            ).map((department) => (
                                 <TableRow key={department.id}>
                                     <TableCell>{department.name}</TableCell>
                                     <TableCell>{department.code}</TableCell>

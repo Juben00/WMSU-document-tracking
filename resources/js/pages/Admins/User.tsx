@@ -16,6 +16,7 @@ import { getFullName } from '@/lib/utils';
 import Swal from 'sweetalert2';
 import AddNewUser from '@/components/Admin/AddUser';
 import Spinner from '@/components/spinner';
+import { Input } from '@/components/ui/input';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -52,7 +53,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
+    const [filter, setFilter] = useState('');
     const { processing, delete: destroy, patch, data, setData, post, errors, reset, put } = useForm({
         first_name: '',
         last_name: '',
@@ -138,7 +139,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
             {processing && <Spinner />}
             <Head title="Admin Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
-                <div className="flex justify-between items-center">
+                <div className="flex gap-6 overflow-auto items-center w-full">
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
@@ -146,6 +147,10 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                 Manage all users
                             </p>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1">
+                        <p className="text-sm font-semibold dark:text-white">Search:</p>
+                        <Input type="text" placeholder="Search User" onChange={(e) => setFilter(e.target.value)} value={filter} />
                     </div>
                     <div className="flex items-center gap-2">
                         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -213,7 +218,14 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {users.map((user) => (
+                            {users.filter((user) =>
+                                user.first_name.toLowerCase().includes(filter.toLowerCase()) ||
+                                user.last_name.toLowerCase().includes(filter.toLowerCase()) ||
+                                user.middle_name?.toLowerCase().includes(filter.toLowerCase()) ||
+                                user.position.toLowerCase().includes(filter.toLowerCase()) ||
+                                user.department?.name?.toLowerCase().includes(filter.toLowerCase()) ||
+                                user.email.toLowerCase().includes(filter.toLowerCase())
+                            ).map((user) => (
                                 <TableRow key={user.id}>
                                     <TableCell>{getFullName(user)}</TableCell>
                                     <TableCell>{user.position}</TableCell>

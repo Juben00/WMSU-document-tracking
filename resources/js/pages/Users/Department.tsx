@@ -267,7 +267,7 @@ const Offices = ({ auth, users }: Props) => {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+                    {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
                         <div className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                 <div className={`flex items-center gap-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-4 border border-gray-200 dark:border-gray-600`}>
@@ -283,16 +283,22 @@ const Offices = ({ auth, users }: Props) => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Users Table */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div className="p-8">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                    <Users className="w-5 h-5 text-white" />
+                            <div className="w-full flex items-center justify-between gap-3 mb-8">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
+                                        <Users className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h2 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Department Users</h2>
                                 </div>
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Department Users</h2>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">Total Users:</p>
+                                    <p className="text-xl font-bold text-red-900 dark:text-red-300">{users.length}</p>
+                                </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <Table>

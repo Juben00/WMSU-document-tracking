@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MultiSelect } from '@/components/ui/multi-select';
 import Swal from 'sweetalert2';
-import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw } from 'lucide-react';
+import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw, Star, ClipboardList, Megaphone, Info, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import Spinner from '@/components/spinner';
 
 type FormData = {
@@ -485,10 +485,34 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
 
     const documentTypeOptions = [
-        { value: 'special_order', label: 'Special Order' },
-        { value: 'order', label: 'Order' },
-        { value: 'memorandum', label: 'Memorandum' },
-        { value: 'for_info', label: 'For Info' },
+        {
+            value: 'special_order',
+            label: 'Special Order',
+            icon: Star,
+            description: 'Official directives with special significance',
+            color: 'from-yellow-500 to-orange-500'
+        },
+        {
+            value: 'order',
+            label: 'Order',
+            icon: ClipboardList,
+            description: 'Standard administrative orders',
+            color: 'from-blue-500 to-indigo-500'
+        },
+        {
+            value: 'memorandum',
+            label: 'Memorandum',
+            icon: Megaphone,
+            description: 'Internal communications and announcements',
+            color: 'from-purple-500 to-pink-500'
+        },
+        {
+            value: 'for_info',
+            label: 'For Info',
+            icon: Info,
+            description: 'Informational documents for awareness',
+            color: 'from-green-500 to-emerald-500'
+        },
     ];
 
 
@@ -531,108 +555,91 @@ const CreateDocument = ({ auth, departments }: Props) => {
                             </div>
 
                             <form id="create-doc-form" onSubmit={handleSubmit} className="space-y-8">
-                                {/* Document Type and Order Number */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                        <label htmlFor="document_type" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                            Document Type <span className="text-red-500">*</span>
-                                        </label>
-                                        <Select
-                                            value={data.document_type}
-                                            onValueChange={(value: 'special_order' | 'order' | 'memorandum' | 'for_info') =>
-                                                setData('document_type', value)
-                                            }
-                                        >
-                                            <SelectTrigger className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition truncate bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                                                <SelectValue placeholder="Select document type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {documentTypeOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {errors.document_type && <div className="text-red-500 text-xs mt-1">{errors.document_type}</div>}
+                                {/* Document Type Selection */}
+                                <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-2 h-8 bg-gradient-to-b from-red-500 to-red-600 rounded-full"></div>
+                                        <div>
+                                            <label className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                                Document Type <span className="text-red-500">*</span>
+                                            </label>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Choose the type of document you want to create</p>
+                                        </div>
                                     </div>
 
-                                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                        <label htmlFor="order_number" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                            Order Number <span className="text-red-500">*</span>
-                                        </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {documentTypeOptions.map((option) => {
+                                            const IconComponent = option.icon;
+                                            const isSelected = data.document_type === option.value;
 
-                                        {/* Order Number Generation Toggle */}
-                                        <div className="mb-4">
-                                            <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="radio"
-                                                            id="manual_order"
-                                                            name="order_generation"
-                                                            checked={!data.auto_generate_order_number}
-                                                            onChange={() => {
-                                                                setData('auto_generate_order_number', false);
-                                                                setData('order_number', '');
-                                                            }}
-                                                            className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                                        />
-                                                        <label htmlFor="manual_order" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                            Manual Input
-                                                        </label>
+                                            return (
+                                                <div
+                                                    key={option.value}
+                                                    onClick={() => setData('document_type', option.value as 'special_order' | 'order' | 'memorandum' | 'for_info')}
+                                                    className={`
+                                                        relative cursor-pointer rounded-xl p-4 border-2 transition-all duration-200 transform hover:scale-105
+                                                        ${isSelected
+                                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20 shadow-lg'
+                                                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md'
+                                                        }
+                                                    `}
+                                                >
+                                                    {/* Selection indicator */}
+                                                    {isSelected && (
+                                                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Icon with gradient background */}
+                                                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${option.color} flex items-center justify-center mb-3 mx-auto`}>
+                                                        <IconComponent className="w-6 h-6 text-white" />
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="radio"
-                                                            id="auto_order"
-                                                            name="order_generation"
-                                                            checked={data.auto_generate_order_number}
-                                                            onChange={() => {
-                                                                setData('auto_generate_order_number', true);
-                                                                // Clear existing timeout and generate immediately
-                                                                if (generateOrderNumberTimeoutRef.current) {
-                                                                    clearTimeout(generateOrderNumberTimeoutRef.current);
-                                                                }
-                                                                generateOrderNumber();
-                                                            }}
-                                                            className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                                        />
-                                                        <label htmlFor="auto_order" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                            Auto-Generate
-                                                        </label>
-                                                    </div>
+
+                                                    {/* Title */}
+                                                    <h3 className={`text-sm font-semibold text-center mb-2 ${isSelected ? 'text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-white'
+                                                        }`}>
+                                                        {option.label}
+                                                    </h3>
+
+                                                    {/* Description */}
+                                                    <p className={`text-xs text-center leading-relaxed ${isSelected ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+                                                        }`}>
+                                                        {option.description}
+                                                    </p>
                                                 </div>
+                                            );
+                                        })}
+                                    </div>
 
-                                                {data.auto_generate_order_number && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            // Clear existing timeout and generate immediately
-                                                            if (generateOrderNumberTimeoutRef.current) {
-                                                                clearTimeout(generateOrderNumberTimeoutRef.current);
-                                                            }
-                                                            generateOrderNumber();
-                                                        }}
-                                                        disabled={isGeneratingOrderNumber}
-                                                        className="flex items-center gap-2 px-3 py-1.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        <RefreshCw className={`h-3 w-3 ${isGeneratingOrderNumber ? 'animate-spin' : ''}`} />
-                                                        {isGeneratingOrderNumber ? 'Generating...' : 'Refresh'}
-                                                    </button>
-                                                )}
-                                            </div>
+                                    {errors.document_type && <div className="text-red-500 text-xs mt-3">{errors.document_type}</div>}
+                                </div>
+
+                                {/* Order Number */}
+                                <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+                                        <div>
+                                            <label htmlFor="order_number" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                                Order Number <span className="text-red-500">*</span>
+                                            </label>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter manually or let the system generate automatically</p>
                                         </div>
+                                    </div>
 
-                                        {/* Order number input */}
-                                        <div className="relative">
+                                    {/* Order number input with side-by-side controls */}
+                                    <div className="flex md:flex-row flex-col gap-3 items-start">
+                                        {/* Input field container */}
+                                        <div className="lg:flex-1 w-full relative">
                                             <Input
                                                 type="text"
                                                 name="order_number"
                                                 id="order_number"
                                                 required
                                                 placeholder={data.auto_generate_order_number ? (isGeneratingOrderNumber ? "Generating..." : "Auto-generated") : "e.g. 2024-00123"}
-                                                className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                                className="block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                                                 value={data.order_number}
                                                 onChange={e => setData('order_number', e.target.value)}
                                                 disabled={data.auto_generate_order_number}
@@ -644,46 +651,113 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                             )}
                                         </div>
 
-                                        {errors.order_number && <div className="text-red-500 text-xs mt-1">{errors.order_number}</div>}
-
-                                        {data.auto_generate_order_number && (
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-                                                <div className="flex items-start gap-2">
-                                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                                                    <div>
-                                                        <span className="font-medium text-blue-700 dark:text-blue-300">
-                                                            {isGeneratingOrderNumber ? 'Generating order number...' : 'Auto-generation enabled'}
-                                                        </span>
-                                                        <p className="text-blue-600 dark:text-blue-400 mt-0.5">
-                                                            {isGeneratingOrderNumber
-                                                                ? 'Please wait while we generate your order number.'
-                                                                : `Order number will be automatically generated based on your department and the current fiscal year.`
-                                                            }
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                        {/* Radio controls container */}
+                                        <div className="flex flex-col md:flex-row w-full md:items-center gap-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="radio"
+                                                    id="manual_order"
+                                                    name="order_generation"
+                                                    checked={!data.auto_generate_order_number}
+                                                    onChange={() => {
+                                                        setData('auto_generate_order_number', false);
+                                                        setData('order_number', '');
+                                                    }}
+                                                    className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                                />
+                                                <label htmlFor="manual_order" className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                                    Manual Input
+                                                </label>
                                             </div>
-                                        )}
 
-                                        {!data.auto_generate_order_number && (
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
-                                                <div className="flex items-start gap-2">
-                                                    <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                                                    <div>
-                                                        <span className="font-medium text-gray-700 dark:text-gray-300">Manual input enabled</span>
-                                                        <p className="text-gray-600 dark:text-gray-400 mt-0.5">
-                                                            Please enter your order number manually. Make sure it follows your department's numbering convention.
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="radio"
+                                                    id="auto_order"
+                                                    name="order_generation"
+                                                    checked={data.auto_generate_order_number}
+                                                    onChange={() => {
+                                                        setData('auto_generate_order_number', true);
+                                                        // Clear existing timeout and generate immediately
+                                                        if (generateOrderNumberTimeoutRef.current) {
+                                                            clearTimeout(generateOrderNumberTimeoutRef.current);
+                                                        }
+                                                        generateOrderNumber();
+                                                    }}
+                                                    className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                                />
+                                                <label htmlFor="auto_order" className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                                    Auto-Generate
+                                                </label>
                                             </div>
-                                        )}
+
+                                            {data.auto_generate_order_number && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        // Clear existing timeout and generate immediately
+                                                        if (generateOrderNumberTimeoutRef.current) {
+                                                            clearTimeout(generateOrderNumberTimeoutRef.current);
+                                                        }
+                                                        generateOrderNumber();
+                                                    }}
+                                                    disabled={isGeneratingOrderNumber}
+                                                    className="flex items-center gap-1  px-2 p-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 disabled:opacity-50 disabled:cursor-not-allowed md:ml-2"
+                                                >
+                                                    <RefreshCw className={`h-3 w-3 ${isGeneratingOrderNumber ? 'animate-spin' : ''}`} />
+                                                    {isGeneratingOrderNumber ? 'Generating...' : 'Refresh'}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
+
+                                    {errors.order_number && <div className="text-red-500 text-xs mt-1">{errors.order_number}</div>}
+
+                                    {data.auto_generate_order_number && (
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                                            <div className="flex items-start gap-2">
+                                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                                <div>
+                                                    <span className="font-medium text-blue-700 dark:text-blue-300">
+                                                        {isGeneratingOrderNumber ? 'Generating order number...' : 'Auto-generation enabled'}
+                                                    </span>
+                                                    <p className="text-blue-600 dark:text-blue-400 mt-0.5">
+                                                        {isGeneratingOrderNumber
+                                                            ? 'Please wait while we generate your order number.'
+                                                            : `Order number will be automatically generated based on your department and the current fiscal year.`
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!data.auto_generate_order_number && (
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+                                            <div className="flex items-start gap-2">
+                                                <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                                <div>
+                                                    <span className="font-medium text-gray-700 dark:text-gray-300">Manual input enabled</span>
+                                                    <p className="text-gray-600 dark:text-gray-400 mt-0.5">
+                                                        Please enter your order number manually. Make sure it follows your department's numbering convention.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Subject */}
-                                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                    <label htmlFor="subject" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Subject <span className="text-red-500">*</span></label>
+                                <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+                                        <div>
+                                            <label htmlFor="subject" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                                Subject <span className="text-red-500">*</span>
+                                            </label>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Brief, descriptive title for your document</p>
+                                        </div>
+                                    </div>
                                     <Input
                                         type="text"
                                         name="subject"
@@ -698,8 +772,16 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                 </div>
 
                                 {/* Description */}
-                                <div className="bg-gray-50   dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                    <label htmlFor="description" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Description <span className="text-red-500">*</span></label>
+                                <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+                                        <div>
+                                            <label htmlFor="description" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                                Description <span className="text-red-500">*</span>
+                                            </label>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detailed explanation of the document's purpose and content</p>
+                                        </div>
+                                    </div>
                                     <Textarea
                                         name="description"
                                         id="description"
@@ -765,14 +847,19 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     </div>
 
                     {/* Recipients Section */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8 border border-gray-200 dark:border-gray-700">
-                        <div className="p-8">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                    <Users className="w-5 h-5 text-white" />
+                    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-blue-100 dark:border-blue-800/30">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
+                                    <Users className="w-6 h-6 text-white" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recipients</h2>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recipients</h2>
+                                    <p className="text-blue-600 dark:text-blue-400 text-sm font-medium mt-1">Step 2 of 4 • Select document recipients</p>
+                                </div>
                             </div>
+                        </div>
+                        <div className="p-8">
 
                             {data.document_type === 'for_info' ? (
                                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
@@ -845,24 +932,35 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     </div>
 
                     {/* Files Section */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8 border border-gray-200 dark:border-gray-700">
-                        <div className="p-8">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                    <Upload className="w-5 h-5 text-white" />
+                    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-green-100 dark:border-green-800/30">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
+                                    <Upload className="w-6 h-6 text-white" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upload Documents</h2>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upload Documents</h2>
+                                    <p className="text-green-600 dark:text-green-400 text-sm font-medium mt-1">Step 3 of 4 • Attach your document files</p>
+                                </div>
                             </div>
+                        </div>
+                        <div className="p-8">
 
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                <label htmlFor="files" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                    <Upload className="w-4 h-4" />
-                                    Select Files <span className="text-red-500">*</span>
-                                </label>
+                            <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+                                    <div>
+                                        <label htmlFor="files" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                            <Upload className="w-5 h-5" />
+                                            Select Files <span className="text-red-500">*</span>
+                                        </label>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Upload PDF, Word, Excel, or image files</p>
+                                    </div>
+                                </div>
+
                                 <div
-                                    className={`relative flex flex-col items-center justify-center border-2 border-dashed ${isDragActive ? 'border-red-600 bg-red-50 dark:bg-red-900/20' : 'border-red-400 dark:border-red-600'} rounded-lg p-6 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/10 transition cursor-pointer`}
+                                    className={`relative group transition-all duration-300 ${isDragActive ? 'scale-102' : 'scale-100'}`}
                                     onClick={() => fileInputRef.current?.click()}
-                                    style={{ minHeight: 120 }}
                                     tabIndex={0}
                                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
                                     role="button"
@@ -871,23 +969,42 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     onDragOver={e => { e.preventDefault(); setIsDragActive(true); }}
                                     onDragLeave={e => { e.preventDefault(); setIsDragActive(false); }}
                                 >
-                                    <Upload className="w-10 h-10 text-red-500 dark:text-red-400 mb-2" />
-                                    <span className="text-gray-700 dark:text-gray-200 font-medium">Drag & drop files here, or <span className="underline text-red-600 dark:text-red-400">browse</span></span>
-                                    <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">You can select multiple files</span>
-                                    <Input
-                                        type="file"
-                                        name="files"
-                                        id="files"
-                                        multiple
-                                        required
-                                        ref={fileInputRef}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                        onChange={handleFileChange}
-                                        tabIndex={-1}
-                                        aria-label="Select files to upload"
-                                    />
+                                    <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 cursor-pointer transition-all duration-300 ${isDragActive ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg scale-105' : 'border-green-300 dark:border-green-600 bg-white dark:bg-gray-800 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/10 hover:shadow-md'}`}>
+                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${isDragActive ? 'bg-green-500 shadow-lg scale-110' : 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-800 dark:to-green-700 group-hover:from-green-200 group-hover:to-green-300'}`}>
+                                            <Upload className={`w-8 h-8 transition-all duration-300 ${isDragActive ? 'text-white' : 'text-green-600 dark:text-green-300'}`} />
+                                        </div>
+
+                                        <div className="text-center">
+                                            <h3 className={`text-xl font-bold mb-2 transition-colors ${isDragActive ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                                                {isDragActive ? 'Drop your files here!' : 'Upload your documents'}
+                                            </h3>
+                                            <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                                Drag & drop files here, or <span className="font-semibold text-green-600 dark:text-green-400 underline">browse your computer</span>
+                                            </p>
+
+                                            <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">PDF</span>
+                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">DOC</span>
+                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">XLSX</span>
+                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">Images</span>
+                                            </div>
+                                        </div>
+
+                                        <Input
+                                            type="file"
+                                            name="files"
+                                            id="files"
+                                            multiple
+                                            required
+                                            ref={fileInputRef}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={handleFileChange}
+                                            tabIndex={-1}
+                                            aria-label="Select files to upload"
+                                        />
+                                    </div>
                                 </div>
-                                {errors.files && <div className="text-red-500 text-xs mt-1">{errors.files}</div>}
+                                {errors.files && <div className="text-red-500 text-sm mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">{errors.files}</div>}
                             </div>
 
                             {/* File Previews */}
@@ -936,39 +1053,99 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     </div>
 
                     {/* Actions Section */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8 border border-gray-200 dark:border-gray-700">
-                        <div className="p-8">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                    <FileCheck className="w-5 h-5 text-white" />
+                    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
+                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-purple-100 dark:border-purple-800/30">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg">
+                                    <FileCheck className="w-6 h-6 text-white" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Submit Document</h2>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Submit Document</h2>
+                                    <p className="text-purple-600 dark:text-purple-400 text-sm font-medium mt-1">Step 4 of 4 • Review and submit your document</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-8">
+
+                            {/* Summary Card */}
+                            <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm mb-8">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Review Summary</h3>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Double-check your information before submitting</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                            <div className={`w-3 h-3 rounded-full ${data.document_type ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.document_type ? documentTypeOptions.find(opt => opt.value === data.document_type)?.label : 'Not selected'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                            <div className={`w-3 h-3 rounded-full ${data.subject ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Subject</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.subject || 'Not filled'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                            <div className={`w-3 h-3 rounded-full ${data.order_number ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Order Number</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.order_number || 'Not generated'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                            <div className={`w-3 h-3 rounded-full ${data.files.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Files</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.files.length} file(s) selected</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row justify-end gap-4">
+                            <div className="flex flex-col sm:flex-row justify-end gap-6">
                                 <button
                                     type="button"
                                     onClick={() => window.history.back()}
                                     disabled={isSubmitting || processing}
-                                    className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="group inline-flex items-center justify-center gap-3 px-8 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-2xl text-base font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                                 >
+                                    <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     form="create-doc-form"
                                     disabled={isSubmitting || processing}
-                                    className="px-8 py-3 rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 transform hover:scale-105"
+                                    className="group inline-flex items-center justify-center gap-3 px-12 py-4 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-red-500 via-red-600 to-pink-600 hover:from-red-600 hover:via-red-700 hover:to-pink-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden"
                                 >
-                                    {isSubmitting || processing ? (
-                                        <>
-                                            <span>Submitting...</span>
-                                            <svg className="animate-spin h-4 w-4 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                            </svg>
-                                        </>
-                                    ) : 'Submit Document'}
+                                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                                    <div className="relative flex items-center gap-3">
+                                        {isSubmitting || processing ? (
+                                            <>
+                                                <Clock className="w-5 h-5 animate-spin" />
+                                                <span>Submitting Document...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileCheck className="w-5 h-5 transition-transform group-hover:scale-110" />
+                                                <span>Submit Document</span>
+                                            </>
+                                        )}
+                                    </div>
                                 </button>
                             </div>
                         </div>

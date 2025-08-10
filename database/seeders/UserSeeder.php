@@ -24,7 +24,6 @@ class UserSeeder extends Seeder
             'role' => 'superadmin',
             'department_id' => null,
             'position' => 'Superadmin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Superadmin+User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
             'email_verified_at' => now(),
@@ -40,10 +39,168 @@ class UserSeeder extends Seeder
             'position' => 'University President',
             'department_id' => 1,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Test+User',
             'email' => 'wmsu_pres@gmail.com',
             'password' => Hash::make('password'),
         ]);
+
+        User::factory()->create([
+            'first_name' => 'Flores',
+            'last_name' => 'Berhana',
+            'middle_name' => 'Ignacio',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Chief of Staff',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'berhana.flores@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Valerio',
+            'last_name' => 'Aldrin',
+            'middle_name' => 'Sebastian',
+            'suffix' => '',
+            'gender' => 'Male',
+            'position' => 'EA/Associate Professor IV',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'valerio.aldrin@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Flores',
+            'last_name' => 'Darlyn',
+            'middle_name' => 'Perez',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Special Assistant to the President',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'darlyn.flores@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Kassim',
+            'last_name' => 'Shamir',
+            'middle_name' => 'Reyes',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'EASAC-UCC',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'kassim.shamir@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Atilano',
+            'last_name' => 'Trinity Jade',
+            'middle_name' => 'Lledo',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Admin Officer 3',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'atilano.trinityjade@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Jukuy',
+            'last_name' => 'Jhema Lyne',
+            'middle_name' => 'Sahi',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Admin Officer 1',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'jhemasahi@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Gabuni',
+            'last_name' => 'Aimee',
+            'middle_name' => 'Encarnado',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Admin Aide 5',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'aimeeencarnado18@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Adasa',
+            'last_name' => 'Jose Raul',
+            'middle_name' => 'B.',
+            'suffix' => '',
+            'gender' => 'Male',
+            'position' => 'Admin Aide 4',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'donjoseadasa@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Sumaga',
+            'last_name' => 'Jennife',
+            'middle_name' => 'L.',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Admin Aide 3',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'xt202004188@wmsu.edu.ph',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create(attributes: [
+            'first_name' => 'Dumagal',
+            'last_name' => 'Ariel',
+            'middle_name' => '',
+            'suffix' => '',
+            'gender' => 'Male',
+            'position' => 'Admin Aide 3',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'ariel.dumagal@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+
+        User::factory()->create(attributes: [
+            'first_name' => 'Agno',
+            'last_name' => 'Stephen Lloyd',
+            'middle_name' => 'Lim',
+            'suffix' => '',
+            'gender' => 'Male',
+            'position' => 'Admin Aide 3',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'stephenlloydagno@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create(attributes: [
+            'first_name' => 'Gutierez',
+            'last_name' => 'Catherine',
+            'middle_name' => 'Diongson',
+            'suffix' => '',
+            'gender' => 'Female',
+            'position' => 'Admin Aide 1',
+            'department_id' => 1,
+            'role' => 'user',
+            'email' => 'catherinegutierez083@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        // ------------------------------------------------------------------------ //
 
         // OVP
         User::factory()->create([
@@ -55,7 +212,6 @@ class UserSeeder extends Seeder
             'position' => 'University Vice President',
             'department_id' => 2,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'wmsu_ovp@gmail.com',
             'password' => Hash::make('password'),
         ]);
@@ -70,7 +226,6 @@ class UserSeeder extends Seeder
             'position' => 'University Vice President for Research and Development',
             'department_id' => 3,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'ovp_rd@gmail.coom',
             'password' => Hash::make('password'),
         ]);
@@ -85,7 +240,6 @@ class UserSeeder extends Seeder
             'position' => 'University Vice President for Academic Affairs',
             'department_id' => 4,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'ovpaa@gmail.com',
             'password' => Hash::make('password'),
         ]);
@@ -100,7 +254,6 @@ class UserSeeder extends Seeder
             'position' => 'University Vice President for Finance',
             'department_id' => 5,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'wmsu_finance@gmail.com',
             'password' => Hash::make('password'),
         ]);
@@ -115,7 +268,6 @@ class UserSeeder extends Seeder
             'position' => 'Dean',
             'department_id' => 6,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'wmsu_ccs@gmail.com',
             'password' => Hash::make('password'),
         ]);
@@ -130,11 +282,10 @@ class UserSeeder extends Seeder
             'position' => 'President',
             'department_id' => 7,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'wmsu_usc@gmail.com',
             'password' => Hash::make('password'),
         ]);
-    
+
 
                 // OSA
         User::factory()->create([
@@ -146,7 +297,6 @@ class UserSeeder extends Seeder
             'position' => 'VP for Student Affairs',
             'department_id' => 8,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'wmsu_osa@gmail.com',
             'password' => Hash::make('password'),
         ]);
@@ -161,7 +311,6 @@ class UserSeeder extends Seeder
             'position' => 'Head',
             'department_id' => 8,
             'role' => 'admin',
-            'avatar' => 'https://ui-avatars.com/api/?name=Joe+Doe',
             'email' => 'wmsu_legaloffice@gmail.com',
             'password' => Hash::make('password'),
         ]);
