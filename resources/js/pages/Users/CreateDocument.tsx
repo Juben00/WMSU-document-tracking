@@ -82,13 +82,12 @@ const CreateDocument = ({ auth, departments }: Props) => {
     // Function to generate auto order number
     const generateOrderNumber = async (retryCount = 0) => {
         if (!data.document_type) {
-            console.warn('Document type is required to generate order number');
+            console.warn("Document type is required to generate order number");
             return;
         }
 
-        // Prevent multiple simultaneous requests
         if (isGeneratingRef.current) {
-            console.warn('Order number generation already in progress');
+            console.warn("Order number generation already in progress");
             return;
         }
 
@@ -96,108 +95,90 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
-            console.log('Starting order number generation for document type:', data.document_type);
+            console.log(`Attempt ${retryCount + 1}: Generating order number for ${data.document_type}`);
 
-            // Ensure CSRF token is available before making request
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            // Ensure CSRF token exists before making request
+            let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!csrfToken) {
-                console.log('Waiting for CSRF token to be available...');
-                // Wait a bit for the token to be available (common on first login)
+                console.warn("CSRF token missing, waiting...");
                 await new Promise(resolve => setTimeout(resolve, 1000));
+                csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             }
 
-            // Use configured axios instance which handles CSRF tokens automatically
-            const response = await axios.post(route('users.documents.generate-order-number'), {
-                document_type: data.document_type,
-            });
+            const response = await axios.post(
+                route("users.documents.generate-order-number"),
+                { document_type: data.document_type }
+            );
 
-            console.log('Order number generation response:', response.data);
-
-            const result = response.data;
-
-            if (result.order_number) {
-                setData('order_number', result.order_number);
-                console.log('Order number generated successfully:', result.order_number);
+            if (response.data?.order_number) {
+                setData("order_number", response.data.order_number);
+                console.log("✅ Order number generated:", response.data.order_number);
+                return;
             } else {
-                throw new Error('No order number received from server');
+                throw new Error("No order number received from server");
             }
-        } catch (error: any) {
-            console.error('Error generating order number:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
 
-            // Handle CSRF token issues specifically
-            if (error.response?.status === 419) {
-                console.log('CSRF token issue detected, attempting to refresh...');
+        } catch (error: any) {
+            const status = error.response?.status;
+            const errMsg = error.response?.data?.error || error.message;
+
+            console.error(`❌ Error (attempt ${retryCount + 1}):`, errMsg);
+
+            // CSRF fix & retry
+            if (status === 419 && retryCount < 3) {
+                console.warn("CSRF token issue detected, refreshing...");
                 try {
-                    // Try to refresh the CSRF token
-                    const refreshResponse = await axios.get(route('users.refresh-csrf'));
-                    if (refreshResponse.data.success) {
-                        console.log('CSRF token refreshed successfully, retrying...');
-                        // Update the meta tag with the new token
-                        const metaTag = document.querySelector('meta[name="csrf-token"]');
-                        if (metaTag) {
-                            metaTag.setAttribute('content', refreshResponse.data.csrf_token);
-                        }
-                        // Retry the original request
-                        setTimeout(() => {
-                            generateOrderNumber(retryCount);
-                        }, 500);
-                        return;
+                    const refresh = await axios.get(route("users.refresh-csrf"));
+                    if (refresh.data.success) {
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.setAttribute("content", refresh.data.csrf_token);
+                        console.log("CSRF refreshed, retrying...");
+                        return setTimeout(() => generateOrderNumber(retryCount + 1), 500);
                     }
-                } catch (refreshError) {
-                    console.error('Failed to refresh CSRF token:', refreshError);
+                } catch (refreshErr) {
+                    console.error("Failed to refresh CSRF token:", refreshErr);
                 }
             }
 
-            // Retry logic for network errors or 5xx server errors
-            const shouldRetry = retryCount < 2 && (
-                error.code === 'NETWORK_ERROR' ||
-                error.message.includes('Network Error') ||
-                error.response?.status >= 500 ||
-                error.response?.data?.message?.includes('Duplicate order number') ||
-                error.response?.data?.error?.includes('Duplicate order number') ||
-                error.response?.data?.error?.includes('Unable to generate unique order number')
-            );
+            // Retry for network/server/duplicate issues
+            const shouldRetry =
+                retryCount < 2 &&
+                (
+                    error.code === "NETWORK_ERROR" ||
+                    error.message.includes("Network Error") ||
+                    status >= 500 ||
+                    errMsg?.includes("Duplicate order number") ||
+                    errMsg?.includes("Unable to generate unique order number")
+                );
 
             if (shouldRetry) {
-                console.log(`Retrying order number generation (attempt ${retryCount + 1})`);
-                setTimeout(() => {
-                    generateOrderNumber(retryCount + 1);
-                }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
-                return;
+                const delay = 1000 * (retryCount + 1); // backoff
+                console.warn(`Retrying in ${delay / 1000}s...`);
+                return setTimeout(() => generateOrderNumber(retryCount + 1), delay);
             }
 
-            // More specific error handling
-            let errorMessage = 'Failed to generate order number. Please try again.';
-
-            if (error.response?.status === 401 || error.response?.status === 403) {
-                errorMessage = 'You are not authorized to perform this action.';
-            } else if (error.response?.status >= 500) {
-                errorMessage = 'Server error occurred. Please try again later.';
-            } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
-                errorMessage = 'Network error. Please check your connection and try again.';
-            } else if (error.response?.data?.message?.includes('Duplicate order number') || error.response?.data?.error?.includes('Duplicate order number')) {
-                errorMessage = 'A duplicate order number was detected. The system will try to generate a new one.';
-            } else if (error.response?.data?.error?.includes('Unable to generate unique order number')) {
-                errorMessage = 'Unable to generate a unique order number. Please try again.';
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error;
-            }
-
+            // Show user-friendly error if retries fail
             Swal.fire({
-                icon: 'error',
-                title: 'Generation Failed',
-                text: errorMessage,
-                confirmButtonColor: '#b91c1c',
+                icon: "error",
+                title: "Generation Failed",
+                text:
+                    status === 401 || status === 403
+                        ? "You are not authorized to perform this action."
+                        : status >= 500
+                            ? "Server error occurred. Please try again later."
+                            : error.code === "NETWORK_ERROR" || error.message.includes("Network Error")
+                                ? "Network error. Please check your connection and try again."
+                                : errMsg || "Failed to generate order number. Please try again.",
+                confirmButtonColor: "#b91c1c",
             });
+
         } finally {
             isGeneratingRef.current = false;
             setIsGeneratingOrderNumber(false);
         }
     };
+
 
     // Auto-generate order number when document type changes and auto-generate is enabled
     useEffect(() => {
