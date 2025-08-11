@@ -123,6 +123,12 @@ const Navbar = () => {
             delete (window as any).axios.defaults.headers.common['X-CSRF-TOKEN'];
         }
 
+        // Clear CSRF meta tag
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) {
+            metaTag.setAttribute('content', '');
+        }
+
         // Close all menus
         setMenuOpen(false);
         setProfileOpen(false);

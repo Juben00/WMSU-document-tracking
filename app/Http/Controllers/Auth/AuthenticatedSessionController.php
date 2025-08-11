@@ -68,10 +68,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Start a new session for the next request
-        $request->session()->start();
-        $request->session()->regenerateToken();
-
         return redirect('/login');
     }
 }

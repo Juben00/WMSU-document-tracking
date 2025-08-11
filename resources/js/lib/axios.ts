@@ -88,22 +88,40 @@ axios.interceptors.response.use(
     (response) => {
         return response;
     },
-    (error) => {
+    async (error) => {
         if (error.response?.status === 419) {
-            // CSRF token mismatch, try to get a fresh token and retry
             console.warn('CSRF token mismatch detected');
 
+            // Don't retry if this is a logout request to avoid infinite loops
+            if (error.config.url && error.config.url.includes('/logout')) {
+                console.log('Logout request failed with 419, redirecting to login');
+                window.location.href = '/login';
+                return Promise.reject(error);
+            }
+
             // Try to get a fresh token
-            const freshToken = getCsrfToken();
+            let freshToken = getCsrfToken();
+
+            // If still no token, wait a bit for it to be available
+            if (!freshToken) {
+                freshToken = await waitForCsrfToken(1000);
+            }
+
             if (freshToken && freshToken !== error.config.headers['X-CSRF-TOKEN']) {
                 console.log('Retrying request with fresh CSRF token');
                 error.config.headers['X-CSRF-TOKEN'] = freshToken;
                 return axios.request(error.config);
             }
 
-            // If no fresh token or same token, refresh the page
-            console.warn('No fresh CSRF token available, refreshing page...');
-            window.location.reload();
+            // If this is a login page, just reject the error to show form validation
+            if (window.location.pathname === '/login') {
+                console.log('Login page CSRF error, showing form validation');
+                return Promise.reject(error);
+            }
+
+            // If no fresh token or same token, redirect to login
+            console.warn('No fresh CSRF token available, redirecting to login...');
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }

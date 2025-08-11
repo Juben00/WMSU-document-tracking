@@ -26,8 +26,13 @@ class RegenerateCsrfOnNavigation
                            $previousPath !== null &&
                            $previousPath !== $currentPath;
 
-        // Regenerate CSRF token on page navigation
-        if ($isPageNavigation) {
+        // Only regenerate CSRF token on specific sensitive navigations, not all page navigations
+        // This prevents unnecessary token regeneration that causes 419 errors
+        $sensitivePages = ['login', 'logout', 'register', 'password/reset'];
+        $shouldRegenerateToken = $isPageNavigation &&
+                                in_array($currentPath, $sensitivePages);
+
+        if ($shouldRegenerateToken) {
             $request->session()->regenerateToken();
         }
 
