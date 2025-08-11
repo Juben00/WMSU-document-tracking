@@ -115,6 +115,10 @@ const CreateDocument = ({ auth, departments }: Props) => {
             if (response.data?.order_number) {
                 setData("order_number", response.data.order_number);
                 console.log("✅ Order number generated:", response.data.order_number);
+
+                // Reset generation state immediately on success
+                isGeneratingRef.current = false;
+                setIsGeneratingOrderNumber(false);
                 return;
             } else {
                 throw new Error("No order number received from server");
@@ -136,7 +140,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     console.warn("Failed to refresh CSRF token:", refreshError);
                 }
 
-                // Retry after delay
+                // Retry after delay (don't reset generation state yet)
                 setTimeout(() => {
                     generateOrderNumber(retryCount + 1);
                 }, (retryCount + 1) * 1000);
