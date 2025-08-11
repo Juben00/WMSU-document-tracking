@@ -285,35 +285,12 @@ class UserController extends Controller
                 return response()->json(['error' => 'User not authenticated.'], 401);
             }
 
-            // Enhanced CSRF token validation for debugging
-            $csrfToken = $request->header('X-CSRF-TOKEN');
-            $hasCsrfToken = $request->hasHeader('X-CSRF-TOKEN');
-            $sessionId = $request->session()->getId();
-
-            Log::info('CSRF token validation details', [
+            // Basic logging for debugging
+            Log::info('Order number generation request', [
                 'user_id' => Auth::id(),
-                'has_csrf_token' => $hasCsrfToken,
-                'csrf_token_length' => $csrfToken ? strlen($csrfToken) : 0,
-                'session_id' => $sessionId,
-                'session_exists' => $request->session()->isStarted(),
-                'user_agent' => $request->userAgent(),
+                'document_type' => $request->input('document_type'),
                 'ip' => $request->ip()
             ]);
-
-            // Additional session validation for first login scenarios
-            if (!$hasCsrfToken || !$csrfToken) {
-                Log::warning('CSRF token missing on order number generation request', [
-                    'user_id' => Auth::id(),
-                    'session_id' => $sessionId,
-                    'headers' => $request->headers->all()
-                ]);
-
-                // Return a more specific error for CSRF issues
-                return response()->json([
-                    'error' => 'Session validation failed. Please refresh the page and try again.',
-                    'code' => 'CSRF_MISSING'
-                ], 419);
-            }
 
             $request->validate([
                 'document_type' => 'required|in:special_order,order,memorandum,for_info',
