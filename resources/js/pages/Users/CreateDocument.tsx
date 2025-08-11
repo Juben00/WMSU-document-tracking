@@ -3,6 +3,7 @@ import Navbar from '@/components/User/navbar';
 import { useForm, router } from '@inertiajs/react';
 import axios from '@/lib/axios';
 import { User } from '@/types';
+import { useCsrfToken } from '@/hooks/use-csrf-token';
 import {
     Select,
     SelectContent,
@@ -51,6 +52,9 @@ interface Props {
 
 
 const CreateDocument = ({ auth, departments }: Props) => {
+    // Ensure CSRF token is available
+    const csrfToken = useCsrfToken();
+
     const fileObjectUrls = useRef<string[]>([]);
     const [filePreviews, setFilePreviews] = useState<Array<{ type: 'image' | 'file', value: string, name: string }>>([]);
     const [sendToId, setSendToId] = useState<number | null>(null);
@@ -79,8 +83,8 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const presidentDepartmentId = 1;
     const isPresidentDepartment = auth.user.department_id === presidentDepartmentId;
 
-    // Function to generate auto order number
-    const generateOrderNumber = async () => {
+    // Function to generate auto order number with robust CSRF handling
+    const generateOrderNumber = async (retryCount = 0) => {
         if (!data.document_type) {
             console.warn("Document type is required to generate order number");
             return;
@@ -95,7 +99,13 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
-            console.log(`Generating order number for ${data.document_type}`);
+            console.log(`Generating order number for ${data.document_type} (attempt ${retryCount + 1})`);
+
+            // Wait for CSRF token to be available on first attempt
+            if (retryCount === 0 && !csrfToken) {
+                console.log("⏳ Waiting for CSRF token...");
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
 
             const response = await axios.post(
                 route("users.documents.generate-order-number"),
@@ -105,21 +115,59 @@ const CreateDocument = ({ auth, departments }: Props) => {
             if (response.data?.order_number) {
                 setData("order_number", response.data.order_number);
                 console.log("✅ Order number generated:", response.data.order_number);
+                return;
             } else {
                 throw new Error("No order number received from server");
             }
 
         } catch (error: any) {
-            console.error("❌ Error generating order number:", error.response?.data?.error || error.message);
+            const status = error.response?.status;
+            console.error(`❌ Error generating order number (attempt ${retryCount + 1}):`, error.response?.data?.error || error.message);
 
-            // Show user-friendly error
-            Swal.fire({
-                icon: 'error',
-                title: 'Error Generating Order Number',
-                text: error.response?.data?.error || 'Failed to generate order number. Please try again.',
-                confirmButtonColor: '#b91c1c',
-            });
-        } finally {
+            // Handle CSRF 419 errors with automatic retry
+            if (status === 419 && retryCount < 3) {
+                console.log(`🔄 CSRF error detected, retrying in ${(retryCount + 1) * 1000}ms...`);
+
+                // Try to refresh CSRF token first
+                try {
+                    await axios.get(route("users.refresh-csrf"));
+                    console.log("🔄 CSRF token refreshed");
+                } catch (refreshError) {
+                    console.warn("Failed to refresh CSRF token:", refreshError);
+                }
+
+                // Retry after delay
+                setTimeout(() => {
+                    generateOrderNumber(retryCount + 1);
+                }, (retryCount + 1) * 1000);
+                return;
+            }
+
+            // Show user-friendly error only after all retries failed
+            if (status === 419) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Session Issue',
+                    text: 'Your session has expired. Please refresh the page and try again.',
+                    confirmButtonColor: '#b91c1c',
+                    showCancelButton: true,
+                    confirmButtonText: 'Refresh Page',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Generating Order Number',
+                    text: error.response?.data?.error || 'Failed to generate order number. Please try again.',
+                    confirmButtonColor: '#b91c1c',
+                });
+            }
+
+            // Reset flags after error handling
             isGeneratingRef.current = false;
             setIsGeneratingOrderNumber(false);
         }
@@ -129,7 +177,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
     // Auto-generate order number when document type changes and auto-generate is enabled
     useEffect(() => {
-        if (data.auto_generate_order_number && data.document_type) {
+        if (data.auto_generate_order_number && data.document_type && csrfToken) {
             // Clear existing timeout
             if (generateOrderNumberTimeoutRef.current) {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
@@ -147,11 +195,11 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
             }
         };
-    }, [data.document_type, data.auto_generate_order_number]);
+    }, [data.document_type, data.auto_generate_order_number, csrfToken]);
 
     // Handle auto-generation toggle changes
     useEffect(() => {
-        if (data.auto_generate_order_number && data.document_type) {
+        if (data.auto_generate_order_number && data.document_type && csrfToken) {
             // Clear existing timeout
             if (generateOrderNumberTimeoutRef.current) {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
@@ -169,7 +217,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
             }
         };
-    }, [data.auto_generate_order_number]);
+    }, [data.auto_generate_order_number, csrfToken]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
