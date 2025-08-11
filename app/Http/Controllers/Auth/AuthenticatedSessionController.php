@@ -68,6 +68,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        // Redirect to login with a flag to trigger page refresh
+        return redirect('/login?refreshed=1');
     }
 }

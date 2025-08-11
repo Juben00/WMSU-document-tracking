@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
 import Spinner from '@/components/spinner';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -27,6 +27,18 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         password: '',
         remember: false,
     });
+
+    // Check if we need to refresh after logout
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('refreshed') === '1') {
+            // Remove the query parameter and refresh the page
+            window.history.replaceState({}, '', '/login');
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        }
+    }, []);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
