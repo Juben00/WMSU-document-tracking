@@ -9,7 +9,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
-import { useCsrfToken } from '@/hooks/use-csrf-token';
 
 type LoginForm = {
     email: string;
@@ -23,9 +22,6 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword }: LoginProps) {
-    // Ensure CSRF token is available
-    useCsrfToken();
-
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
         password: '',
@@ -36,13 +32,6 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         e.preventDefault();
         post(route('login'), {
             onFinish: () => reset('password'),
-            onError: (errors) => {
-                // If there's a CSRF error (419), refresh the page to get a new token
-                if (errors.message && errors.message.includes('419')) {
-                    console.warn('CSRF token expired, refreshing page...');
-                    window.location.reload();
-                }
-            },
         });
     };
 

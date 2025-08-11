@@ -14,14 +14,11 @@ use App\Models\UserActivityLog;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
+        /**
      * Show the login page.
      */
     public function create(Request $request): Response
     {
-        // Always regenerate CSRF token on login page to prevent stale tokens
-        $request->session()->regenerateToken();
-
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
@@ -65,14 +62,11 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        Auth::guard('web')->logout();
+                Auth::guard('web')->logout();
 
         // Invalidate the session and regenerate CSRF token
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        // Clear all session data to prevent CSRF issues
-        $request->session()->flush();
 
         return redirect('/login');
     }
