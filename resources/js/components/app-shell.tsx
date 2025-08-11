@@ -2,6 +2,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { Toaster } from 'sonner';
+import { useCsrfToken } from '@/hooks/use-csrf-token';
 
 interface AppShellProps {
     children: React.ReactNode;
@@ -10,6 +11,9 @@ interface AppShellProps {
 
 export function AppShell({ children, variant = 'header' }: AppShellProps) {
     const isOpen = usePage<SharedData>().props.sidebarOpen;
+
+    // Initialize CSRF token management
+    useCsrfToken();
 
     if (variant === 'header') {
         return (

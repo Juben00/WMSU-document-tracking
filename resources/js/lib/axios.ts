@@ -2,14 +2,19 @@ import axios from 'axios';
 
 // Get CSRF token with multiple fallback methods
 const getCsrfToken = () => {
-    // Method 1: Get from meta tag
+    // Method 1: Get from window object (updated by our hook)
+    if ((window as any).csrfToken) {
+        return (window as any).csrfToken;
+    }
+
+    // Method 2: Get from meta tag
     let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     if (token) {
         return token;
     }
 
-    // Method 2: Get from cookie
+    // Method 3: Get from cookie
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=');
@@ -21,11 +26,6 @@ const getCsrfToken = () => {
 
     if (token) {
         return token;
-    }
-
-    // Method 3: Get from window object (if set by Inertia)
-    if ((window as any).csrfToken) {
-        return (window as any).csrfToken;
     }
 
     return null;

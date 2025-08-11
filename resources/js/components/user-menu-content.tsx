@@ -15,6 +15,15 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
 
     const handleLogout = () => {
         cleanup();
+
+        // Clear any stored CSRF tokens
+        delete (window as any).csrfToken;
+
+        // Clear axios headers
+        if ((window as any).axios) {
+            delete (window as any).axios.defaults.headers.common['X-CSRF-TOKEN'];
+        }
+
         router.flushAll();
     };
 

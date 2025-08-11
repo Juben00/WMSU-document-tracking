@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
@@ -91,6 +92,21 @@ Route::middleware(['auth', 'verified', 'require_password_change'])->group(functi
 
     // Refresh CSRF token endpoint
     Route::get('/users/refresh-csrf', [UserController::class, 'refreshCsrf'])->name('users.refresh-csrf');
+
+    // Test CSRF token regeneration endpoint
+    Route::post('/users/test-csrf-regeneration', function (Request $request) {
+        $oldToken = $request->header('X-CSRF-TOKEN');
+        $request->session()->regenerateToken();
+        $newToken = csrf_token();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'CSRF token regenerated successfully',
+            'old_token' => $oldToken,
+            'new_token' => $newToken,
+            'tokens_different' => $oldToken !== $newToken
+        ]);
+    })->name('users.test-csrf-regeneration');
 
     Route::get('/users/documents/{document}/edit', [UserController::class, 'editDocument'])->name('users.documents.edit');
     Route::put('/users/documents/{document}', [UserController::class, 'updateDocument'])->name('users.documents.update');
