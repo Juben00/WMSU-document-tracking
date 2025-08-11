@@ -124,8 +124,8 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
             console.error(`❌ Error (attempt ${retryCount + 1}):`, errMsg);
 
-            // CSRF fix & retry
-            if (status === 419 && retryCount < 3) {
+            // Handle CSRF token refresh
+            if (status === 419) {
                 console.warn("CSRF token issue detected, refreshing...");
                 try {
                     const refresh = await axios.get(route("users.refresh-csrf"));
@@ -141,43 +141,19 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 }
             }
 
-            // Retry for network/server/duplicate issues
-            const shouldRetry =
-                retryCount < 2 &&
-                (
-                    error.code === "NETWORK_ERROR" ||
-                    error.message.includes("Network Error") ||
-                    status >= 500 ||
-                    errMsg?.includes("Duplicate order number") ||
-                    errMsg?.includes("Unable to generate unique order number")
-                );
-
-            if (shouldRetry) {
-                const delay = 1000 * (retryCount + 1); // backoff
-                console.warn(`Retrying in ${delay / 1000}s...`);
-                return setTimeout(() => generateOrderNumber(retryCount + 1), delay);
-            }
-
-            // Show user-friendly error if retries fail
-            Swal.fire({
-                icon: "error",
-                title: "Generation Failed",
-                text:
-                    status === 401 || status === 403
-                        ? "You are not authorized to perform this action."
-                        : status >= 500
-                            ? "Server error occurred. Please try again later."
-                            : error.code === "NETWORK_ERROR" || error.message.includes("Network Error")
-                                ? "Network error. Please check your connection and try again."
-                                : errMsg || "Failed to generate order number. Please try again.",
-                confirmButtonColor: "#b91c1c",
-            });
-
+            // Retry logic — keep retrying forever, but with exponential backoff (max 30s)
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+            console.warn(`Retrying in ${delay / 1000}s...`);
+            return setTimeout(() => generateOrderNumber(retryCount + 1), delay);
         } finally {
-            isGeneratingRef.current = false;
-            setIsGeneratingOrderNumber(false);
+            // Keep "generating" state until it succeeds, so user knows it's still working
+            if (retryCount === 0) {
+                isGeneratingRef.current = false;
+                setIsGeneratingOrderNumber(false);
+            }
         }
     };
+
 
 
     // Auto-generate order number when document type changes and auto-generate is enabled
