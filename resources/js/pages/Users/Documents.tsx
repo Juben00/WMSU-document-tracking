@@ -202,8 +202,8 @@ const Documents = ({ documents, auth }: Props) => {
     );
 
     // Sent: documents where the user is the owner, but the latest recipient is NOT the current user/department, and not in received
-    // const sent = latestDocs.filter((doc) => isInCurrentFiscalYear(doc.created_at) && isDocumentSentByUser(doc) && !received.some(r => r.id === doc.id));
-    const sent = latestDocs.filter((doc) => isInCurrentFiscalYear(doc.created_at) && !received.some(r => r.id === doc.id));
+    const sent = latestDocs.filter((doc) => isInCurrentFiscalYear(doc.created_at) && isDocumentSentByUser(doc) && !received.some(r => r.id === doc.id));
+    // const sent = latestDocs.filter((doc) => isInCurrentFiscalYear(doc.created_at) && !received.some(r => r.id === doc.id));
 
     const published = documents.filter((doc) => doc.owner_id === auth.user.id && (doc as any).is_public)
 
