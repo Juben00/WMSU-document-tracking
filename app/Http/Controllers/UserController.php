@@ -1110,10 +1110,14 @@ class UserController extends Controller
     public function dashboardData()
     {
         $userId = Auth::id();
+        $userDepartmentId = Auth::user()->department_id;
+
         // Fetch as collections
         $ownedDocuments = Document::where('owner_id', $userId)->get();
-        $receivedDocuments = Document::whereHas('recipients', function($query) use ($userId) {
-            $query->where('department_id', $userId);
+
+        // Fix: Use user's department_id instead of user_id for recipient documents
+        $receivedDocuments = Document::whereHas('recipients', function($query) use ($userDepartmentId) {
+            $query->where('department_id', $userDepartmentId);
         })->get();
 
         // Merge collections and remove duplicates (if any)
@@ -1126,8 +1130,8 @@ class UserController extends Controller
         // Count published documents where user is owner or recipient
         $publishedDocuments = $allDocuments->where('is_public', true)->count();
 
-        // Recent Activities: last 5 actions involving the user (owned or received)
-        $recentActivities = DocumentRecipient::where('department_id', $userId)
+        // Recent Activities: last 5 actions involving the user's department (received documents)
+        $recentActivities = DocumentRecipient::where('department_id', $userDepartmentId)
             ->orderByDesc('responded_at')
             ->with('document')
             ->take(5)
@@ -1156,6 +1160,7 @@ class UserController extends Controller
     public function publishedDocuments()
     {
         $userId = Auth::id();
+        $userDepartmentId = Auth::user()->department_id;
 
         // Get documents where user is the owner
         $ownedDocuments = Document::where('owner_id', $userId)
@@ -1180,9 +1185,9 @@ class UserController extends Controller
                 ];
             });
 
-        // Get documents where user is a recipient
-        $receivedDocuments = Document::whereHas('recipients', function($query) use ($userId) {
-            $query->where('department_id', $userId);
+        // Get documents where user is a recipient - Fix: Use user's department_id
+        $receivedDocuments = Document::whereHas('recipients', function($query) use ($userDepartmentId) {
+            $query->where('department_id', $userDepartmentId);
         })
         ->where('is_public', true)
         ->where('owner_id', '!=', $userId) // Exclude documents where user is also the owner
