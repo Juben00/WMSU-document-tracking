@@ -197,7 +197,7 @@ const Documents = ({ documents, auth }: Props) => {
             isInCurrentFiscalYear(doc.created_at) &&
             (
                 (doc.document_type === "for_info" && isForInfoReceivedByDepartment(doc)) ||
-                (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && doc.recipient_status === "received")
+                (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"))
             )
     );
 
