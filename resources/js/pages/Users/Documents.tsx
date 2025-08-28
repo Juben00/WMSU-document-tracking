@@ -96,7 +96,7 @@ const Documents = ({ documents, auth, document_data }: Props) => {
                         <div class="bg-white dark:bg-gray-900 p-4 rounded-lg border">
                             <h4 class="font-semibold mb-3">Document Barcode:</h4>
                             <div class="flex justify-center">
-                                <img src="${document_data.barcode_svg_url}" alt="Document Barcode" class="max-w-full h-auto" style="max-height: 100px;"/>
+                                <img src="/storage/${document_data.barcode_path}" alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" />
                             </div>
                             <div class="flex items-center justify-center gap-2 mt-2">
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Barcode: ${document_data.barcode_value}</p>
