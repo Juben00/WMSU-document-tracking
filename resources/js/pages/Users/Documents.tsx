@@ -197,7 +197,8 @@ const Documents = ({ documents, auth, document_data }: Props) => {
         }
         // For other types, keep the sequential logic if needed
         return (
-            (doc.user_id && doc.user_id === userId) ||
+            (doc.user_id && doc.user_id === userId)
+            ||
             (doc.department_id && doc.department_id === departmentId)
         );
     };
@@ -246,18 +247,23 @@ const Documents = ({ documents, auth, document_data }: Props) => {
     };
 
     // Received: documents where the current user/department is the latest recipient AND the latest recipient's status is 'received'
+    // BUT exclude documents where the current user is the owner (those should be in sent)
     const received = latestDocs.filter(
         (doc) =>
             isInCurrentFiscalYear(doc.created_at) &&
+            doc.owner_id !== auth.user.id && // Exclude documents owned by current user
             (
                 (doc.document_type === "for_info" && isForInfoReceivedByDepartment(doc)) ||
                 (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"))
             )
     );
 
-    // Sent: documents where the user is the owner, but the latest recipient is NOT the current user/department, and not in received
-    const sent = latestDocs.filter((doc) => isInCurrentFiscalYear(doc.created_at) && !received.some(r => r.id === doc.id));
-    // const sent = latestDocs.filter((doc) => isInCurrentFiscalYear(doc.created_at) && !received.some(r => r.id === doc.id));
+    // Sent: documents where the user is the owner and they are not in received list
+    const sent = latestDocs.filter((doc) =>
+        isInCurrentFiscalYear(doc.created_at) &&
+        doc.owner_id === auth.user.id && // User is the owner
+        !received.some(r => r.id === doc.id) // Not already in received
+    );
 
     const published = documents.filter((doc) => doc.owner_id === auth.user.id && (doc as any).is_public)
 

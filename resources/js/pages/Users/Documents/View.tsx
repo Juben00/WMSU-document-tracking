@@ -1084,7 +1084,7 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                                                                     {recipientName?.charAt(0) || ''}
                                                                                 </div>
                                                                                 <div>
-                                                                                    <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                                                                    <div className="text-sm text-gray-900 dark:text-gray-100">
                                                                                         {recipientName || 'No Department'}
                                                                                         {recipient.received_by ? ` (Received by ${recipient.received_by.first_name} ${recipient.received_by.last_name})` : ''}
                                                                                     </div>

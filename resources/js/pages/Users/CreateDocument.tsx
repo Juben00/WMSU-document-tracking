@@ -1113,7 +1113,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     <FileCheck className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Submit Document</h2>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Send Document</h2>
                                     <p className="text-purple-600 dark:text-purple-400 text-sm font-medium mt-1">Step 4 of 4 • Review and submit your document</p>
                                 </div>
                             </div>
@@ -1126,7 +1126,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Review Summary</h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Double-check your information before submitting</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Double-check your information before Sending</p>
                                     </div>
                                 </div>
 
@@ -1190,12 +1190,12 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                         {isSubmitting || processing ? (
                                             <>
                                                 <Clock className="w-5 h-5 animate-spin" />
-                                                <span>Submitting Document...</span>
+                                                <span>Sending Document...</span>
                                             </>
                                         ) : (
                                             <>
                                                 <FileCheck className="w-5 h-5 transition-transform group-hover:scale-110" />
-                                                <span>Submit Document</span>
+                                                <span>Send Document</span>
                                             </>
                                         )}
                                     </div>
