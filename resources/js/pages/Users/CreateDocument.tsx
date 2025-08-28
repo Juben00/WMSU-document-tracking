@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '@/components/User/navbar';
 import { useForm, router } from '@inertiajs/react';
 import axios from '@/lib/axios';
-import { User } from '@/types';
+import { Departments, User } from '@/types';
 import { useCsrfToken } from '@/hooks/use-csrf-token';
 import {
     Select,
@@ -15,13 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MultiSelect } from '@/components/ui/multi-select';
 import Swal from 'sweetalert2';
-import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw, Star, ClipboardList, Megaphone, Info, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw, Star, ClipboardList, Megaphone, Info, CheckCircle, AlertCircle, Clock, Mail, Plane, MapPin, PartyPopper, Receipt, GraduationCap, CreditCard, Briefcase, FileSignature, FolderOpen } from 'lucide-react';
 import Spinner from '@/components/spinner';
 
 type FormData = {
     subject: string;
     order_number: string;
-    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info';
+    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info' | 'letters' | 'email' | 'travel_order' | 'city_resolution' | 'invitations' | 'vouchers' | 'diploma' | 'checks' | 'job_orders' | 'contract_of_service' | 'pr';
     description: string;
     files: File[];
     status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'returned';
@@ -41,11 +41,7 @@ interface Props {
     departments: Array<{
         id: number;
         name: string;
-        contact_person: {
-            id: number;
-            name: string;
-            role: string;
-        } | null;
+        is_presidential: boolean;
     }>;
 }
 
@@ -64,7 +60,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const { data, setData, post, processing, errors } = useForm<FormData>({
         subject: '',
         order_number: '',
-        document_type: 'for_info',
+        document_type: 'special_order',
         description: '',
         files: [],
         status: 'pending',
@@ -80,8 +76,9 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const generateOrderNumberTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isGeneratingRef = useRef(false);
-    const presidentDepartmentId = 1;
-    const isPresidentDepartment = auth.user.department_id === presidentDepartmentId;
+    const isPresidentDepartment = auth.user.department?.is_presidential || false;
+
+    console.log(auth.user.department?.is_presidential);
 
     // Function to generate auto order number with robust CSRF handling
     const generateOrderNumber = async (retryCount = 0) => {
@@ -176,8 +173,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
             setIsGeneratingOrderNumber(false);
         }
     };
-
-
 
     // Auto-generate order number when document type changes and auto-generate is enabled
     useEffect(() => {
@@ -355,15 +350,8 @@ const CreateDocument = ({ auth, departments }: Props) => {
             forceFormData: true,
             onSuccess: () => {
                 setIsSubmitting(false);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Document Submitted!',
-                    text: 'Your document has been sent successfully.',
-                    confirmButtonColor: '#b91c1c',
-                }).then(() => {
-                    // Redirect to documents page after success
-                    window.location.href = route('users.documents');
-                });
+                // Simply redirect to documents page - the barcode will be shown there via session data
+                // window.location.href = route('users.documents');
             },
             onError: (errors) => {
                 console.error('Document submission errors:', errors);
@@ -464,7 +452,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
     }));
 
 
-    const documentTypeOptions = [
+    const baseDocumentTypeOptions = [
         {
             value: 'special_order',
             label: 'Special Order',
@@ -495,6 +483,90 @@ const CreateDocument = ({ auth, departments }: Props) => {
         },
     ];
 
+    const presidentialDocumentTypeOptions = [
+        {
+            value: 'letters',
+            label: 'Letters',
+            icon: FileText,
+            description: 'Official correspondence and letters',
+            color: 'from-slate-500 to-gray-500'
+        },
+        {
+            value: 'email',
+            label: 'Email',
+            icon: Mail,
+            description: 'Email communications and mailing',
+            color: 'from-cyan-500 to-blue-500'
+        },
+        {
+            value: 'travel_order',
+            label: 'Travel Order',
+            icon: Plane,
+            description: 'Travel authorizations and orders',
+            color: 'from-sky-500 to-blue-500'
+        },
+        {
+            value: 'city_resolution',
+            label: 'City Resolution',
+            icon: MapPin,
+            description: 'City resolutions and ordinances',
+            color: 'from-emerald-500 to-green-500'
+        },
+        {
+            value: 'invitations',
+            label: 'Invitations',
+            icon: PartyPopper,
+            description: 'Event invitations and announcements',
+            color: 'from-pink-500 to-rose-500'
+        },
+        {
+            value: 'vouchers',
+            label: 'Vouchers',
+            icon: Receipt,
+            description: 'Payment vouchers from payroll',
+            color: 'from-orange-500 to-amber-500'
+        },
+        {
+            value: 'diploma',
+            label: 'Diploma',
+            icon: GraduationCap,
+            description: 'Academic certificates and diplomas',
+            color: 'from-indigo-500 to-purple-500'
+        },
+        {
+            value: 'checks',
+            label: 'Checks',
+            icon: CreditCard,
+            description: 'Payment checks and financial documents',
+            color: 'from-green-500 to-teal-500'
+        },
+        {
+            value: 'job_orders',
+            label: 'Job Orders',
+            icon: Briefcase,
+            description: 'Job orders and contracts',
+            color: 'from-blue-500 to-cyan-500'
+        },
+        {
+            value: 'contract_of_service',
+            label: 'Contract of Service',
+            icon: FileSignature,
+            description: 'Service contracts and agreements',
+            color: 'from-purple-500 to-violet-500'
+        },
+        {
+            value: 'pr',
+            label: 'PR',
+            icon: FolderOpen,
+            description: 'Public relations documents',
+            color: 'from-red-500 to-pink-500'
+        },
+    ];
+
+    const documentTypeOptions = isPresidentDepartment
+        ? [...baseDocumentTypeOptions, ...presidentialDocumentTypeOptions]
+        : baseDocumentTypeOptions;
+
 
     return (
         <>
@@ -515,7 +587,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                 </div>
                             </div>
                             <button
-                                onClick={() => window.history.back()}
+                                onClick={() => router.visit(route('users.documents'))}
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white font-semibold rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm hover:shadow-md transition-all duration-200"
                             >
                                 <ArrowLeft className="w-4 h-4" />
@@ -547,7 +619,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${isPresidentDepartment ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-4'}`}>
                                         {documentTypeOptions.map((option) => {
                                             const IconComponent = option.icon;
                                             const isSelected = data.document_type === option.value;
@@ -555,7 +627,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                             return (
                                                 <div
                                                     key={option.value}
-                                                    onClick={() => setData('document_type', option.value as 'special_order' | 'order' | 'memorandum' | 'for_info')}
+                                                    onClick={() => setData('document_type', option.value as FormData['document_type'])}
                                                     className={`
                                                         relative cursor-pointer rounded-xl p-4 border-2 transition-all duration-200 transform hover:scale-105
                                                         ${isSelected
@@ -632,7 +704,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                         </div>
 
                                         {/* Radio controls container */}
-                                        <div className="flex flex-col md:flex-row w-full md:items-center gap-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2">
+                                        <div className="flex flex-col flex-1 dark:border-gray-600 md:flex-row w-full md:items-center gap-4 bg-white dark:bg-gray-800 rounded-lg px-4 py-2">
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     type="radio"
@@ -888,24 +960,25 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                             <div className="text-red-500 text-xs mt-1">Main department is required.</div>
                                         )}
                                     </div>
-
-                                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                        <label className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
-                                            <Building className="w-4 h-4" />
-                                            Send Through Department <span className="text-gray-400 dark:text-gray-500">(optional)</span>
-                                        </label>
-                                        <MultiSelect
-                                            options={recipientOptions}
-                                            selected={data.through_department_ids}
-                                            onChange={(selected) => {
-                                                setData('through_department_ids', selected);
-                                            }}
-                                            placeholder="Select optional through departments (optional)"
-                                        />
-                                        <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                                            Document will be sent to the first selected through department, then to the main department.
-                                        </p>
-                                    </div>
+                                    {!isPresidentDepartment && (
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
+                                            <label className="text-sm font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
+                                                <Building className="w-4 h-4" />
+                                                Send Through Department <span className="text-gray-400 dark:text-gray-500">(optional)</span>
+                                            </label>
+                                            <MultiSelect
+                                                options={recipientOptions}
+                                                selected={data.through_department_ids}
+                                                onChange={(selected) => {
+                                                    setData('through_department_ids', selected);
+                                                }}
+                                                placeholder="Select optional through departments (optional)"
+                                            />
+                                            <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                                                Document will be sent to the first selected through department, then to the main department.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

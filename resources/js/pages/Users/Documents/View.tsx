@@ -57,7 +57,7 @@ interface DocumentRecipient {
 interface Document {
     id: number;
     subject: string;
-    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info';
+    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info' | 'letters' | 'email' | 'travel_order' | 'city_resolution' | 'invitations' | 'vouchers' | 'diploma' | 'checks' | 'job_orders' | 'contract_of_service' | 'pr';
     description?: string;
     status: string;
     created_at: string;
@@ -349,6 +349,28 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                 return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-700';
             case 'for_info':
                 return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'letters':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'email':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'travel_order':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'city_resolution':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'invitations':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'vouchers':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'diploma':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'checks':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'job_orders':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'contract_of_service':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
+            case 'pr':
+                return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
             default:
                 return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700';
         }
@@ -364,6 +386,28 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                 return 'Memorandum';
             case 'for_info':
                 return 'For Info';
+            case 'letters':
+                return 'Letters';
+            case 'email':
+                return 'Email';
+            case 'travel_order':
+                return 'Travel Order';
+            case 'city_resolution':
+                return 'City Resolution';
+            case 'invitations':
+                return 'Invitations';
+            case 'vouchers':
+                return 'Vouchers';
+            case 'diploma':
+                return 'Diploma';
+            case 'checks':
+                return 'Checks';
+            case 'job_orders':
+                return 'Job Orders';
+            case 'contract_of_service':
+                return 'Contract of Service';
+            case 'pr':
+                return 'PR';
             default:
                 return 'Unknown';
         }

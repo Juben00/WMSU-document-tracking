@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Navbar from "@/components/User/navbar"
 import DocumentTable from "@/components/User/document-table"
 import { Link, router, useForm } from "@inertiajs/react"
@@ -29,7 +29,7 @@ import ReceiveDocument from "@/components/User/receive-document"
 interface Document {
     id: number
     subject: string
-    document_type: "special_order" | "order" | "memorandum" | "for_info"
+    document_type: "special_order" | "order" | "memorandum" | "for_info" | "letters" | "email" | "travel_order" | "city_resolution" | "invitations" | "vouchers" | "diploma" | "checks" | "job_orders" | "contract_of_service" | "pr" | "other"
     status: string
     created_at: string
     owner_id: number
@@ -52,19 +52,17 @@ interface Props {
             id: number
         }
     }
+    document_data?: {
+        id: number
+        subject: string
+        order_number: string
+        barcode_value: string
+        barcode_path: string
+        barcode_svg_url: string
+    }
 }
 
-interface TabConfig {
-    id: string
-    label: string
-    icon: any
-    count: number
-    overstayedCount?: number
-}
-
-
-
-const Documents = ({ documents, auth }: Props) => {
+const Documents = ({ documents, auth, document_data }: Props) => {
     const [activeTab, setActiveTab] = useState("received")
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
@@ -74,10 +72,66 @@ const Documents = ({ documents, auth }: Props) => {
     const [archivedFilter, setArchivedFilter] = useState("all")
     const [overstayedFilter, setOverstayedFilter] = useState("all")
     const [showBarcodeModal, setShowBarcodeModal] = useState(false)
+    const [documentDataShown, setDocumentDataShown] = useState(false)
 
     const { data, setData, post, processing, errors, reset } = useForm({
         barcode_value: ''
     })
+
+    // Show barcode modal when document_data is available (after successful document creation)
+    useEffect(() => {
+        if (document_data?.barcode_svg_url && !documentDataShown) {
+            setDocumentDataShown(true);
+            Swal.fire({
+                icon: 'success',
+                title: 'Document Submitted Successfully!',
+                html: `
+                    <div class="text-center">
+                        <p class="mb-4">Your document has been sent successfully.</p>
+                        <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
+                            <h4 class="font-semibold mb-2">Document Details</h4>
+                            <p><strong>Subject:</strong> ${document_data.subject}</p>
+                            <p><strong>Order Number:</strong> ${document_data.order_number}</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-900 p-4 rounded-lg border">
+                            <h4 class="font-semibold mb-3">Document Barcode:</h4>
+                            <div class="flex justify-center">
+                                <img src="${document_data.barcode_svg_url}" alt="Document Barcode" class="max-w-full h-auto" style="max-height: 100px;"/>
+                            </div>
+                            <div class="flex items-center justify-center gap-2 mt-2">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Barcode: ${document_data.barcode_value}</p>
+                                <button
+                                    onclick="navigator.clipboard.writeText('${document_data.barcode_value}').then(() => {
+                                        const btn = this;
+                                        const originalText = btn.innerHTML;
+                                        btn.innerHTML = '✓ Copied!';
+                                        btn.style.color = '#10b981';
+                                        setTimeout(() => {
+                                            btn.innerHTML = originalText;
+                                            btn.style.color = '#6b7280';
+                                        }, 2000);
+                                    })"
+                                    class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                    title="Copy barcode value"
+                                >
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                confirmButtonColor: '#b91c1c',
+                confirmButtonText: 'Close',
+                width: '600px',
+                customClass: {
+                    popup: 'text-left'
+                }
+            }).then(() => {
+                // Modal closed - no need to reload since we're tracking with state
+                // The document_data will be cleared on next page load by backend
+            });
+        }
+    }, [document_data, documentDataShown])
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -252,6 +306,28 @@ const Documents = ({ documents, auth }: Props) => {
                 return "Memorandum"
             case "for_info":
                 return "For Info"
+            case "letters":
+                return "Letters"
+            case "email":
+                return "Email"
+            case "travel_order":
+                return "Travel Order"
+            case "city_resolution":
+                return "City Resolution"
+            case "invitations":
+                return "Invitations"
+            case "vouchers":
+                return "Vouchers"
+            case "diploma":
+                return "Diploma"
+            case "checks":
+                return "Checks"
+            case "job_orders":
+                return "Job Orders"
+            case "contract_of_service":
+                return "Contract of Service"
+            case "pr":
+                return "PR"
             default:
                 return "Unknown"
         }

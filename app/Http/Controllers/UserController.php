@@ -187,12 +187,19 @@ class UserController extends Controller
             return $doc;
         });
 
+        // Get document_data from session and then clear it
+        $documentData = session('document_data');
+        if ($documentData) {
+            session()->forget('document_data');
+        }
+
         return Inertia::render('Users/Documents', [
             'documents' => $documents,
             'receivedDocuments' => $receivedDocuments,
             'auth' => [
                 'user' => Auth::user()
-            ]
+            ],
+            'document_data' => $documentData
         ]);
     }
 
@@ -260,14 +267,15 @@ class UserController extends Controller
                   ->orderBy('role', 'desc'); // This will put receivers first
         }])->get();
 
-        // get all departments except the current user's department
-        // $departments = Departments::where('id', '!=', Auth::user()->department_id)->get();
         // get all department including the current user's department
         $departments = Departments::get();
 
+        // Load the authenticated user with department relationship
+        $user = User::with('department')->find(Auth::id());
+
         return Inertia::render('Users/CreateDocument', [
             'auth' => [
-                'user' => Auth::user()
+                'user' => $user
             ],
             'departments' => $departments
         ]);
@@ -293,7 +301,7 @@ class UserController extends Controller
             ]);
 
             $request->validate([
-                'document_type' => 'required|in:special_order,order,memorandum,for_info',
+                'document_type' => 'required|in:special_order,order,memorandum,for_info,letters,email,travel_order,city_resolution,invitations,vouchers,diploma,checks,job_orders,contract_of_service,pr',
             ]);
 
             $currentUser = Auth::user();
@@ -616,7 +624,7 @@ class UserController extends Controller
         $validationRules = [
             'subject' => 'required|string|max:255',
             'order_number' => 'required|string|max:255',
-            'document_type' => 'required|in:special_order,order,memorandum,for_info',
+            'document_type' => 'required|in:special_order,order,memorandum,for_info,letters,email,travel_order,city_resolution,invitations,vouchers,diploma,checks,job_orders,contract_of_service,pr',
             'description' => 'nullable|string',
             'files' => 'required|array',
             'files.*' => 'required|file|max:10240', // 10MB max per file
@@ -813,7 +821,18 @@ class UserController extends Controller
             'description' => 'Document sent to departments: ' . $document->recipients->pluck('department_id')->implode(', '),
         ]);
 
-        return redirect()->route('users.documents')->with('success', 'Document sent successfully.');
+        // For Inertia.js requests, redirect with document data in session
+        return redirect()->route('users.documents')->with([
+            'success' => 'Document sent successfully.',
+            'document_data' => [
+                'id' => $document->id,
+                'subject' => $document->subject,
+                'order_number' => $document->order_number,
+                'barcode_value' => $document->barcode_value,
+                'barcode_path' => $document->barcode_path,
+                'barcode_svg_url' => asset(str_replace('public/', 'storage/', $document->barcode_path))
+            ]
+        ]);
 
         } catch (\Throwable $th) {
             Log::error('Error in sendDocument', [

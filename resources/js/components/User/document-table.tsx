@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge"
 interface Document {
     id: number
     subject: string
-    document_type: "special_order" | "order" | "memorandum" | "for_info"
+    document_type: "special_order" | "order" | "memorandum" | "for_info" | "letters" | "email" | "travel_order" | "city_resolution" | "invitations" | "vouchers" | "diploma" | "checks" | "job_orders" | "contract_of_service" | "pr" | "other"
     status: string
     created_at: string
     owner_id: number

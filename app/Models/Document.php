@@ -67,6 +67,17 @@ class Document extends Model
             'order' => 'Order',
             'memorandum' => 'Memorandum',
             'for_info' => 'For Info',
+            'letters' => 'Letters',
+            'email' => 'Email',
+            'travel_order' => 'Travel Order',
+            'city_resolution' => 'City Resolution',
+            'invitations' => 'Invitations',
+            'vouchers' => 'Vouchers',
+            'diploma' => 'Diploma',
+            'checks' => 'Checks',
+            'job_orders' => 'Job Orders',
+            'contract_of_service' => 'Contract of Service',
+            'pr' => 'PR',
             default => 'Unknown'
         };
     }
@@ -81,6 +92,17 @@ class Document extends Model
             'order' => 'Order',
             'memorandum' => 'Memorandum',
             'for_info' => 'For Info',
+            'letters' => 'Letters',
+            'email' => 'Email',
+            'travel_order' => 'Travel Order',
+            'city_resolution' => 'City Resolution',
+            'invitations' => 'Invitations',
+            'vouchers' => 'Vouchers',
+            'diploma' => 'Diploma',
+            'checks' => 'Checks',
+            'job_orders' => 'Job Orders',
+            'contract_of_service' => 'Contract of Service',
+            'pr' => 'PR',
         ];
     }
 }

@@ -74,6 +74,28 @@ const PublicSearch: React.FC<Props> = ({ documents = [], search = '', searchToke
                 return 'Memorandum';
             case 'for_info':
                 return 'For Info';
+            case 'letters':
+                return 'Letters';
+            case 'email':
+                return 'Email';
+            case 'travel_order':
+                return 'Travel Order';
+            case 'city_resolution':
+                return 'City Resolution';
+            case 'invitations':
+                return 'Invitations';
+            case 'vouchers':
+                return 'Vouchers';
+            case 'diploma':
+                return 'Diploma';
+            case 'checks':
+                return 'Checks';
+            case 'job_orders':
+                return 'Job Orders';
+            case 'contract_of_service':
+                return 'Contract of Service';
+            case 'pr':
+                return 'PR';
             default:
                 return 'Unknown';
         }
