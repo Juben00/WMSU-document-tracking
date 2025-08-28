@@ -325,7 +325,7 @@ class UserController extends Controller
                         // Simplified approach with retry mechanism for duplicate detection
             try {
                 // Check if this is the President's office (OP)
-                $isPresidentOffice = $department->code === 'OP';
+                $isPresidentOffice = $department->is_presidential;
 
                 Log::info('Starting order number generation', [
                     'department_id' => $departmentId,
@@ -574,7 +574,7 @@ class UserController extends Controller
         $department = $currentUser->department;
 
         // Check if this is the President's office (OP)
-        $isPresidentOffice = $department && $department->code === 'OP';
+        $isPresidentOffice = $department && $department->is_presidential;
 
         // Define validation rules based on department type
         $orderNumberRule = ['required', 'string', 'max:255'];
@@ -611,8 +611,7 @@ class UserController extends Controller
             };
         }
 
-        // Check if user is from president's department (department_id = 1)
-        $isPresidentDepartment = Auth::user()->department_id === 1;
+        $isPresidentDepartment = Auth::user()->department->is_presidential;
 
         $validationRules = [
             'subject' => 'required|string|max:255',
@@ -920,7 +919,7 @@ class UserController extends Controller
 
         // Check if this is the President's office (OP)
         $department = $doc->department;
-        $isPresidentOffice = $department && $department->code === 'OP';
+        $isPresidentOffice = $department && $department->is_presidential;
 
         // Define validation rules based on department type
         // $orderNumberRule = 'required|string|max:255';

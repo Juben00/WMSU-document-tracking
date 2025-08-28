@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->string('description')->nullable();
             $table->enum('type', ['office', 'college'])->default('office');
+            $table->boolean('is_presidential')->default(false);
             $table->timestamps();
         });
     }

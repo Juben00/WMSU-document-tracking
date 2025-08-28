@@ -45,6 +45,7 @@ export default function Departments({ departments, auth }: Props) {
         code: '',
         description: '',
         type: '',
+        is_presidential: false as boolean,
     });
 
     const handleDeleteOffice = (department: Departments) => {
@@ -86,7 +87,8 @@ export default function Departments({ departments, auth }: Props) {
         setData('name', department.name || '');
         setData('code', department.code || '');
         setData('description', department.description || '');
-        setData('type', department.type || '');
+        setData('type', department.type as 'office' | 'college'); // Assert type
+        setData('is_presidential', department.is_presidential || false);
         setIsEditDialogOpen(true);
     };
 
@@ -135,6 +137,7 @@ export default function Departments({ departments, auth }: Props) {
                                 <TableHead>Code</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Type</TableHead>
+                                <TableHead>Is Presidential</TableHead>
                                 <TableHead>Created At</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -151,6 +154,7 @@ export default function Departments({ departments, auth }: Props) {
                                     <TableCell>{department.code}</TableCell>
                                     <TableCell>{department.description}</TableCell>
                                     <TableCell>{department.type}</TableCell>
+                                    <TableCell>{department.is_presidential ? 'Yes' : 'No'}</TableCell>
                                     <TableCell>{format(new Date(department.created_at), 'MMM d, yyyy')}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">

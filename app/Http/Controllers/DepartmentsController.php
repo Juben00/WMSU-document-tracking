@@ -42,11 +42,20 @@ class DepartmentsController extends Controller
             'code' => 'required|string|max:255|unique:departments',
             'description' => 'nullable|string|max:1000',
             'type' => 'required|string|in:office,college',
+            'is_presidential' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
+                ->withInput();
+        }
+
+        // check if there is a presidential department
+        $presidentialDepartment = Departments::where('is_presidential', true)->first();
+        if ($presidentialDepartment && $request->is_presidential) {
+            return redirect()->back()
+                ->withErrors(['is_presidential' => 'There can only be one presidential department.'])
                 ->withInput();
         }
 
@@ -96,11 +105,20 @@ class DepartmentsController extends Controller
             'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
             'code' => 'required|string|max:255|unique:departments,code,' . $department->id,
             'description' => 'nullable|string|max:1000',
+            'is_presidential' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
             return redirect()->back()
                 ->withErrors($validator)
+                ->withInput();
+        }
+
+        // check if there is a presidential department
+        $presidentialDepartment = Departments::where('is_presidential', true)->first();
+        if ($presidentialDepartment && $request->is_presidential) {
+            return redirect()->back()
+                ->withErrors(['is_presidential' => 'There can only be one presidential department.'])
                 ->withInput();
         }
 

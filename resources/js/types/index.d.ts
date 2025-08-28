@@ -73,6 +73,7 @@ export interface Departments {
     code: string;
     description: string | null;
     type: 'office' | 'college';
+    is_presidential: boolean;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;

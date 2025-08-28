@@ -21,6 +21,7 @@ class DepartmentsFactory extends Factory
             'code' => $this->faker->unique()->regexify('[A-Z]{3,5}'),
             'description' => $this->faker->sentence(),
             'type' => $this->faker->randomElement(['office', 'college']),
+            'is_presidential' => $this->faker->boolean(),
         ];
     }
 }

@@ -15,6 +15,7 @@ class Departments extends Model
         'code',
         'description',
         'type',
+        'is_presidential',
     ];
 
     public function users()

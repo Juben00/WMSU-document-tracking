@@ -7,6 +7,7 @@ import { Departments } from '@/types';
 import InputError from '@/components/input-error';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect } from 'react';
+import { Switch } from '@/components/ui/switch';
 
 interface Props {
     department: Departments;
@@ -59,18 +60,27 @@ export default function EditDepartment({ department, setIsEditDialogOpen, proces
                     <InputError message={errors.name} />
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="code" className="dark:text-gray-200">Department Code</Label>
-                    <Input
-                        id="code"
-                        value={data.code || ''}
-                        onChange={(e) => setData('code', e.target.value)}
-                        placeholder="Enter department code"
-                        required
-                        className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
-                    />
-                    <InputError message={errors.code} />
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 ">
+                        <Label htmlFor="code" className="dark:text-gray-200">Department Code</Label>
+                        <Input
+                            id="code"
+                            value={data.code || ''}
+                            onChange={(e) => setData('code', e.target.value)}
+                            placeholder="Enter department code"
+                            required
+                            className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
+                        />
+                        <InputError message={errors.code} />
+                    </div>
+                    <div className="">
+                        <Label htmlFor="is_presidential" className="dark:text-gray-200">Presidential</Label>
+                        <div className="flex-1 flex justify-center gap-2">
+                            <Switch id="is_presidential" checked={data.is_presidential} onCheckedChange={(checked) => setData('is_presidential', checked)} />
+                        </div>
+                    </div>
                 </div>
+                <InputError message={errors.is_presidential} />
 
                 <div className="space-y-2">
                     <Label htmlFor="description" className="dark:text-gray-200">Description</Label>
