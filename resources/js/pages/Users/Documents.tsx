@@ -1,4 +1,4 @@
-import type React from "react"
+import React from "react"
 import { useState, useEffect } from "react"
 import Navbar from "@/components/User/navbar"
 import DocumentTable from "@/components/User/document-table"
@@ -25,6 +25,12 @@ import Swal from "sweetalert2"
 import TabHeader from "@/components/User/tab-header"
 import Spinner from "@/components/spinner"
 import ReceiveDocument from "@/components/User/receive-document"
+import BarcodeComponent from "@/components/barcode"
+
+// Utility function to detect if dark mode is currently active
+const isDarkMode = () => {
+    return document.documentElement.classList.contains('dark')
+}
 
 interface Document {
     id: number
@@ -84,47 +90,68 @@ const Documents = ({ documents, auth, document_data }: Props) => {
             setDocumentDataShown(true);
             Swal.fire({
                 icon: 'success',
-                title: 'Document Submitted Successfully!',
+                title: 'Document Sent Successfully!',
                 html: `
-                    <div class="text-center">
-                        <p class="mb-4">Your document has been sent successfully.</p>
-                        <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">Document Details</h4>
-                            <p><strong>Subject:</strong> ${document_data.subject}</p>
-                            <p><strong>Order Number:</strong> ${document_data.order_number}</p>
-                        </div>
-                        <div class="bg-white dark:bg-gray-900 p-4 rounded-lg border">
-                            <h4 class="font-semibold mb-3">Document Barcode:</h4>
-                            <div class="flex justify-center">
-                                <img src="/storage/${document_data.barcode_path}" alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" />
+                    <div class="text-center ">
+                        <!-- Document Details Card -->
+                        <div class="max-w-md mx-auto bg-gradient-to-r from-red-50 to-red-50 dark:from-red-900/20 dark:to-red-900/20 rounded-xl p-5 mb-6 border border-red-200 dark:border-red-800">
+                            <div class="flex items-center gap-2 mb-4">
+                                <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <h4 class="font-semibold text-red-800 dark:text-red-200">Document Information</h4>
                             </div>
-                            <div class="flex items-center justify-center gap-2 mt-2">
-                                <p class="text-sm text-gray-600 dark:text-gray-400">Barcode: ${document_data.barcode_value}</p>
-                                <button
-                                    onclick="navigator.clipboard.writeText('${document_data.barcode_value}').then(() => {
-                                        const btn = this;
-                                        const originalText = btn.innerHTML;
-                                        btn.innerHTML = '✓ Copied!';
-                                        btn.style.color = '#10b981';
-                                        setTimeout(() => {
-                                            btn.innerHTML = originalText;
-                                            btn.style.color = '#6b7280';
-                                        }, 2000);
-                                    })"
-                                    class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                    title="Copy barcode value"
-                                >
-                                    📋 Copy
-                                </button>
+
+                            <div class="grid  grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-1.414 0l-7-7A1.997 1.997 0 013 12V7a4 4 0 014-4z"></path>
+                                    </svg>
+                                    <div class="flex-1 text-left">
+                                        <span class="font-medium text-gray-700 dark:text-gray-300">Subject:</span>
+                                        <p class="text-gray-900 dark:text-gray-100 font-semibold">${document_data.subject}</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                    </svg>
+                                    <div class="flex-1 text-left">
+                                        <span class="font-medium text-gray-700 dark:text-gray-300">Order Number:</span>
+                                        <p class="text-gray-900 dark:text-gray-100 font-mono font-bold">${document_data.order_number}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Barcode Container -->
+                        <div id="barcode-container" class="mb-4"></div>
                     </div>
                 `,
                 confirmButtonColor: '#b91c1c',
                 confirmButtonText: 'Close',
-                width: '600px',
+                width: '500px',
                 customClass: {
-                    popup: 'text-left'
+                    popup: isDarkMode() ? 'swal-dark text-left' : 'text-left'
+                },
+                background: isDarkMode() ? '#1f2937' : '#ffffff',
+                color: isDarkMode() ? '#f9fafb' : '#111827',
+                didOpen: () => {
+                    // Render the React barcode component after the modal opens
+                    const container = document.getElementById('barcode-container');
+                    if (container) {
+                        import('react-dom/client').then(({ createRoot }) => {
+                            const root = createRoot(container);
+                            root.render(
+                                React.createElement(BarcodeComponent, {
+                                    barcode_path: document_data.barcode_path,
+                                    barcode_value: document_data.barcode_value,
+                                    className: "mx-auto"
+                                })
+                            );
+                        });
+                    }
                 }
             }).then(() => {
                 // Modal closed - no need to reload since we're tracking with state
@@ -142,6 +169,11 @@ const Documents = ({ documents, auth, document_data }: Props) => {
                     title: 'Document Received',
                     text: 'Document successfully marked as received.',
                     confirmButtonColor: '#b91c1c',
+                    background: isDarkMode() ? '#1f2937' : '#ffffff',
+                    color: isDarkMode() ? '#f9fafb' : '#111827',
+                    customClass: {
+                        popup: isDarkMode() ? 'swal-dark' : ''
+                    }
                 }).then(() => {
                     setShowBarcodeModal(false)
                     reset()
@@ -155,6 +187,11 @@ const Documents = ({ documents, auth, document_data }: Props) => {
                     title: 'Document Not Found',
                     text: errors.barcode_value || 'Invalid barcode. Document not found.',
                     confirmButtonColor: '#b91c1c',
+                    background: isDarkMode() ? '#1f2937' : '#ffffff',
+                    color: isDarkMode() ? '#f9fafb' : '#111827',
+                    customClass: {
+                        popup: isDarkMode() ? 'swal-dark' : ''
+                    }
                 })
             }
         })

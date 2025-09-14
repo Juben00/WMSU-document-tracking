@@ -165,6 +165,10 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     title: 'Error Generating Order Number',
                     text: error.response?.data?.error || 'Failed to generate order number. Please try again.',
                     confirmButtonColor: '#b91c1c',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
                 });
             }
 
@@ -849,35 +853,19 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                 {isPresidentDepartment && (
                                     <>
                                         {/* Signatory */}
-                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                            <label htmlFor="signatory" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Signatory </label>
-                                            <Input
-                                                type="text"
-                                                name="signatory"
-                                                id="signatory"
-                                                placeholder="Enter signatory"
-                                                className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                                value={data.signatory}
-                                                onChange={e => setData('signatory', e.target.value)}
-                                            />
-                                        </div>
-
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                            {/* Request From */}
                                             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
-                                                <label htmlFor="request_from" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Request From</label>
+                                                <label htmlFor="signatory" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Signatory </label>
                                                 <Input
                                                     type="text"
-                                                    name="request_from"
-                                                    id="request_from"
-                                                    placeholder="Enter request from"
+                                                    name="signatory"
+                                                    id="signatory"
+                                                    placeholder="Enter signatory"
                                                     className="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                                                    value={data.request_from}
-                                                    onChange={e => setData('request_from', e.target.value)}
+                                                    value={data.signatory}
+                                                    onChange={e => setData('signatory', e.target.value)}
                                                 />
                                             </div>
-
                                             {/* Request From Department */}
                                             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
                                                 <label htmlFor="request_from_department" className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Request From Department</label>
@@ -1174,7 +1162,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     type="button"
                                     onClick={() => window.history.back()}
                                     disabled={isSubmitting || processing}
-                                    className="group inline-flex items-center justify-center gap-3 px-8 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-2xl text-base font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                                    className="group cursor-pointer inline-flex items-center justify-center gap-3 px-8 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-2xl text-base font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                                 >
                                     <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                                     Cancel
@@ -1183,7 +1171,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     type="submit"
                                     form="create-doc-form"
                                     disabled={isSubmitting || processing}
-                                    className="group inline-flex items-center justify-center gap-3 px-12 py-4 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-red-500 via-red-600 to-pink-600 hover:from-red-600 hover:via-red-700 hover:to-pink-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden"
+                                    className="group cursor-pointer inline-flex items-center justify-center gap-3 px-12 py-4 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-red-500 via-red-600 to-pink-600 hover:from-red-600 hover:via-red-700 hover:to-pink-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                                     <div className="relative flex items-center gap-3">

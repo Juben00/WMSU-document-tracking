@@ -171,4 +171,23 @@
             transform: rotate(-360deg);
         }
     }
+
+    /* SweetAlert2 dark mode styles */
+    .swal-dark.swal2-popup {
+        background-color: #1f2937 !important;
+        color: #f9fafb !important;
+        border: 1px solid #374151 !important;
+    }
+
+    .swal-dark .swal2-title {
+        color: #f9fafb !important;
+    }
+
+    .swal-dark .swal2-content {
+        color: #e5e7eb !important;
+    }
+
+    .swal-dark .swal2-html-container {
+        color: #e5e7eb !important;
+    }
 }

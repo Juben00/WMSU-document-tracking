@@ -638,7 +638,6 @@ class UserController extends Controller
         // Add president-specific validation rules
         if ($isPresidentDepartment) {
             $validationRules['signatory'] = 'nullable|string|max:255';
-            $validationRules['request_from'] = 'nullable|string|max:255';
             $validationRules['request_from_department'] = 'nullable|string|max:255';
         }
 
@@ -659,7 +658,6 @@ class UserController extends Controller
         // Add president-specific fields only if user is from president's department
         if ($isPresidentDepartment) {
             $documentData['signatory'] = $request->input('signatory');
-            $documentData['request_from'] = $request->input('request_from');
             $documentData['request_from_department'] = $request->input('request_from_department');
         }
 
