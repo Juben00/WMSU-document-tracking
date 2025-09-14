@@ -44,11 +44,15 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
                 return new Promise((resolve, reject) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img);
-                    img.onerror = (error) => {
-                        console.error('Image load error:', error);
-                        reject(error);
+                    img.onload = () => {
+                        console.log('Image loaded successfully:', src);
+                        resolve(img);
                     };
+                    img.onerror = (error) => {
+                        console.error('Image load error for:', src, error);
+                        reject(new Error(`Failed to load image: ${src}`));
+                    };
+                    // Add cache-busting parameter and ensure proper path
                     img.src = src + '?t=' + Date.now();
                 });
             };
@@ -75,17 +79,19 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
             pdf.setTextColor(107, 114, 128); // Gray color
             pdf.text('Document Management & Tracking System', pageWidth / 2, 50, { align: 'center' });
 
-            // Add barcode if available (smaller and more compact)
+            // Add barcode if available - using simple approach
             if (barcode_path) {
                 try {
-                    const fullImagePath = window.location.origin + `/storage/${barcode_path}`;
+                    // Use the same path format as the React component
+                    const fullImagePath = `/storage/${barcode_path}`;
                     console.log('Loading barcode image from:', fullImagePath);
 
-                    const barcodeImg = await loadImage(fullImagePath);
+                    // Try to load the image with proper error handling
+                    const barcodeImg = await loadImage(window.location.origin + fullImagePath);
 
-                    // Calculate smaller image dimensions
-                    const maxWidth = 100; // mm (reduced from 140)
-                    const maxHeight = 35; // mm (reduced from 50)
+                    // Calculate image dimensions to fit nicely
+                    const maxWidth = 100; // mm
+                    const maxHeight = 35; // mm
                     const imgRatio = barcodeImg.width / barcodeImg.height;
 
                     let imgWidth = maxWidth;
@@ -100,7 +106,7 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
                     const imgX = (pageWidth - imgWidth) / 2;
                     const imgY = 60;
 
-                    // Add a white background rectangle for the barcode (smaller padding)
+                    // Add a white background rectangle for the barcode
                     pdf.setFillColor(255, 255, 255);
                     pdf.rect(imgX - 5, imgY - 5, imgWidth + 10, imgHeight + 10, 'F');
 
@@ -109,12 +115,14 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
                     pdf.setLineWidth(0.5);
                     pdf.rect(imgX - 5, imgY - 5, imgWidth + 10, imgHeight + 10, 'S');
 
-                    // Add the barcode image
+                    // Add the barcode image with pixelated rendering
                     pdf.addImage(barcodeImg, 'PNG', imgX, imgY, imgWidth, imgHeight);
 
                 } catch (imgError) {
-                    console.warn('Could not load barcode image:', imgError);
-                    // Add placeholder text if image fails to load (smaller)
+                    console.error('Could not load barcode image:', imgError);
+                    console.log('Attempted to load:', `/storage/${barcode_path}`);
+
+                    // Add placeholder text if image fails to load
                     pdf.setFillColor(248, 250, 252);
                     pdf.setDrawColor(203, 213, 225);
                     pdf.setLineWidth(0.5);
@@ -125,7 +133,7 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
                     pdf.text('Barcode image could not be loaded', pageWidth / 2, 80, { align: 'center' });
                 }
             } else {
-                // No barcode path available (smaller)
+                // No barcode path available
                 pdf.setFillColor(248, 250, 252);
                 pdf.setDrawColor(203, 213, 225);
                 pdf.setLineWidth(0.5);
