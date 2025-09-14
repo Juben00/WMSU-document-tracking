@@ -303,7 +303,7 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
     };
 
     return (
-        <div className={`bg-white p-2 dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-md mx-auto ${className}`}>
+        <div className={`bg-white p-2 dark:bg-gray-800 rounded-xl  border border-gray-200 dark:border-gray-700 overflow-hidden max-w-md mx-auto ${className}`}>
             <div ref={barcodeRef} className="p-2 text-center">
 
                 {/* Barcode Display */}

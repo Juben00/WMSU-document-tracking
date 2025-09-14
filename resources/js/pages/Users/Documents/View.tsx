@@ -7,7 +7,7 @@ import ForwardModal from './components/ForwardModal';
 import { Download, FileText, FileCheck, Users, BarChart3, Copy, ExternalLink, Calendar, User, Building, Hash, List, ScanEye, Info } from 'lucide-react';
 import Swal from 'sweetalert2';
 import ForwardOtherOfficeModal from './components/ForwardOtherOfficeModal';
-import { log } from 'console';
+import BarcodeComponent from '@/components/barcode';
 import ReturnModal from './components/ReturnModal';
 
 interface DocumentFile {
@@ -661,9 +661,9 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                             </h3>
                                             {document.barcode_path && (
                                                 <>
-                                                    <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" />
+                                                    {/* <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" /> */}
                                                     {/* Barcode Value Card */}
-                                                    <div className="w-full max-w-sm mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 dark:border-gray-700 mb-4">
+                                                    {/* <div className="w-full max-w-sm mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 dark:border-gray-700 mb-4">
                                                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Barcode</span>
                                                         <div className="flex items-center w-full justify-center gap-2 mb-2">
                                                             <span className="text-base font-mono text-gray-800 dark:text-gray-200 truncate max-w-[200px]" title={document.barcode_value || document.public_token}>
@@ -690,7 +690,8 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                                                 <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                                             </a>
                                                         </div>
-                                                    </div>
+                                                    </div> */}
+                                                    <BarcodeComponent barcode_path={document.barcode_path} barcode_value={document.barcode_value} />
                                                     <span className="text-xs text-gray-500 dark:text-gray-200 text-center font-semibold mb-2">
                                                         Scan or use the code to access the document
                                                     </span>
