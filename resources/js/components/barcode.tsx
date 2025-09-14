@@ -39,21 +39,46 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
             const pageWidth = 210; // A4 width in mm
             const pageHeight = 297; // A4 height in mm
 
-            // Helper function to load images
+            // Helper function to load images with multiple CORS strategies
             const loadImage = (src: string): Promise<HTMLImageElement> => {
                 return new Promise((resolve, reject) => {
                     const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.onload = () => {
-                        console.log('Image loaded successfully:', src);
-                        resolve(img);
+
+                    // Try different CORS strategies
+                    const strategies = [
+                        () => { img.crossOrigin = 'anonymous'; },
+                        () => { img.crossOrigin = 'use-credentials'; },
+                        () => { img.crossOrigin = ''; },
+                        () => { delete (img as any).crossOrigin; }
+                    ];
+
+                    let strategyIndex = 0;
+
+                    const tryLoad = () => {
+                        if (strategyIndex < strategies.length) {
+                            strategies[strategyIndex]();
+                            strategyIndex++;
+                        }
+
+                        img.onload = () => {
+                            console.log('Image loaded successfully with strategy', strategyIndex, ':', src);
+                            resolve(img);
+                        };
+
+                        img.onerror = (error) => {
+                            console.warn(`Image load failed with strategy ${strategyIndex} for:`, src, error);
+                            if (strategyIndex < strategies.length) {
+                                tryLoad(); // Try next strategy
+                            } else {
+                                reject(new Error(`Failed to load image after all strategies: ${src}`));
+                            }
+                        };
+
+                        // Add cache-busting parameter
+                        img.src = src + '?t=' + Date.now();
                     };
-                    img.onerror = (error) => {
-                        console.error('Image load error for:', src, error);
-                        reject(new Error(`Failed to load image: ${src}`));
-                    };
-                    // Add cache-busting parameter and ensure proper path
-                    img.src = src + '?t=' + Date.now();
+
+                    tryLoad();
                 });
             };
 
@@ -79,48 +104,73 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
             pdf.setTextColor(107, 114, 128); // Gray color
             pdf.text('Document Management & Tracking System', pageWidth / 2, 50, { align: 'center' });
 
-            // Add barcode if available - using simple approach
+            // Add barcode if available - using multiple fallback approaches
             if (barcode_path) {
-                try {
-                    // Use the same path format as the React component
-                    const fullImagePath = `/storage/${barcode_path}`;
-                    console.log('Loading barcode image from:', fullImagePath);
+                let barcodeImg: HTMLImageElement | null = null;
+                const possiblePaths = [
+                    `/storage/${barcode_path}`,
+                    `${window.location.origin}/storage/${barcode_path}`,
+                    `storage/${barcode_path}`,
+                    barcode_path.startsWith('/') ? barcode_path : `/${barcode_path}`
+                ];
 
-                    // Try to load the image with proper error handling
-                    const barcodeImg = await loadImage(window.location.origin + fullImagePath);
+                console.log('Attempting to load barcode from paths:', possiblePaths);
 
-                    // Calculate image dimensions to fit nicely
-                    const maxWidth = 100; // mm
-                    const maxHeight = 35; // mm
-                    const imgRatio = barcodeImg.width / barcodeImg.height;
-
-                    let imgWidth = maxWidth;
-                    let imgHeight = maxWidth / imgRatio;
-
-                    if (imgHeight > maxHeight) {
-                        imgHeight = maxHeight;
-                        imgWidth = maxHeight * imgRatio;
+                // Try different paths until one works
+                for (const path of possiblePaths) {
+                    try {
+                        console.log('Trying path:', path);
+                        const fullPath = path.startsWith('http') ? path : window.location.origin + path;
+                        barcodeImg = await loadImage(fullPath);
+                        console.log('Successfully loaded barcode from:', fullPath);
+                        break;
+                    } catch (error) {
+                        console.warn(`Failed to load from ${path}:`, error);
+                        continue;
                     }
+                }
 
-                    // Center the barcode image
-                    const imgX = (pageWidth - imgWidth) / 2;
-                    const imgY = 60;
+                if (barcodeImg) {
+                    try {
+                        // Calculate image dimensions to fit nicely
+                        const maxWidth = 100; // mm
+                        const maxHeight = 35; // mm
+                        const imgRatio = barcodeImg.width / barcodeImg.height;
 
-                    // Add a white background rectangle for the barcode
-                    pdf.setFillColor(255, 255, 255);
-                    pdf.rect(imgX - 5, imgY - 5, imgWidth + 10, imgHeight + 10, 'F');
+                        let imgWidth = maxWidth;
+                        let imgHeight = maxWidth / imgRatio;
 
-                    // Add border around barcode
-                    pdf.setDrawColor(229, 231, 235);
-                    pdf.setLineWidth(0.5);
-                    pdf.rect(imgX - 5, imgY - 5, imgWidth + 10, imgHeight + 10, 'S');
+                        if (imgHeight > maxHeight) {
+                            imgHeight = maxHeight;
+                            imgWidth = maxHeight * imgRatio;
+                        }
 
-                    // Add the barcode image with pixelated rendering
-                    pdf.addImage(barcodeImg, 'PNG', imgX, imgY, imgWidth, imgHeight);
+                        // Center the barcode image
+                        const imgX = (pageWidth - imgWidth) / 2;
+                        const imgY = 60;
 
-                } catch (imgError) {
-                    console.error('Could not load barcode image:', imgError);
-                    console.log('Attempted to load:', `/storage/${barcode_path}`);
+                        // Add a white background rectangle for the barcode
+                        pdf.setFillColor(255, 255, 255);
+                        pdf.rect(imgX - 5, imgY - 5, imgWidth + 10, imgHeight + 10, 'F');
+
+                        // Add border around barcode
+                        pdf.setDrawColor(229, 231, 235);
+                        pdf.setLineWidth(0.5);
+                        pdf.rect(imgX - 5, imgY - 5, imgWidth + 10, imgHeight + 10, 'S');
+
+                        // Add the barcode image with pixelated rendering
+                        pdf.addImage(barcodeImg, 'PNG', imgX, imgY, imgWidth, imgHeight);
+
+                        console.log('Successfully added barcode to PDF');
+                    } catch (addImageError) {
+                        console.error('Error adding barcode to PDF:', addImageError);
+                        // Fall through to error placeholder
+                        barcodeImg = null;
+                    }
+                }
+
+                if (!barcodeImg) {
+                    console.error('All barcode loading attempts failed for path:', barcode_path);
 
                     // Add placeholder text if image fails to load
                     pdf.setFillColor(248, 250, 252);
