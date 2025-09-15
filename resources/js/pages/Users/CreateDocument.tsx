@@ -198,7 +198,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
             }
         };
-    }, [data.document_type, data.auto_generate_order_number, csrfToken]);
+    }, [data.auto_generate_order_number, csrfToken]);
 
     // Handle auto-generation toggle changes
     useEffect(() => {

@@ -288,7 +288,7 @@ const Documents = ({ documents, auth, document_data }: Props) => {
     const received = latestDocs.filter(
         (doc) =>
             isInCurrentFiscalYear(doc.created_at) &&
-            doc.owner_id !== auth.user.id && // Exclude documents owned by current user
+            // doc.owner_id !== auth.user.id && // Exclude documents owned by current user
             (
                 (doc.document_type === "for_info" && isForInfoReceivedByDepartment(doc)) ||
                 (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"))
@@ -300,6 +300,7 @@ const Documents = ({ documents, auth, document_data }: Props) => {
         isInCurrentFiscalYear(doc.created_at) &&
         doc.owner_id === auth.user.id && // User is the owner
         !received.some(r => r.id === doc.id) // Not already in received
+        && doc.recipient_status !== "returned"
     );
 
     const published = documents.filter((doc) => doc.owner_id === auth.user.id && (doc as any).is_public)

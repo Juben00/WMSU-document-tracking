@@ -909,12 +909,12 @@ class UserController extends Controller
         $involvedDepartments = $involvedDepartments->unique('id')->sortBy('name')->values();
 
         // Remove the current user's department from the involved departments
-        $currentUser = Auth::user();
-        if ($currentUser && $currentUser->department_id) {
-            $involvedDepartments = $involvedDepartments->filter(function ($dept) use ($currentUser) {
-                return $dept['id'] !== $currentUser->department_id;
-            })->values();
-        }
+        // $currentUser = Auth::user();
+        // if ($currentUser && $currentUser->department_id) {
+        //     $involvedDepartments = $involvedDepartments->filter(function ($dept) use ($currentUser) {
+        //         return $dept['id'] !== $currentUser->department_id;
+        //     })->values();
+        // }
 
         return Inertia::render('Users/EditDocument', [
             'document' => $doc,
