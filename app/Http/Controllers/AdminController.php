@@ -174,7 +174,7 @@ class AdminController extends Controller
                     'id' => $activity->id,
                     'document_title' => $activity->document->subject ?? 'Untitled',
                     'document_owner' => $activity->document->owner->first_name . ' ' . $activity->document->owner->last_name,
-                    'recipient' => $activity->department->name ?? 'Unknown Department',
+                    'recipient' => $activity->department->name ?? $activity->user->department->name ?? 'Unknown Department',
                     'status' => $activity->status,
                     'comments' => $activity->comments,
                     'responded_at' => $activity->responded_at,
