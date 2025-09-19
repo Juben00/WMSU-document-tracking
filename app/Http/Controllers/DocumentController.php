@@ -309,7 +309,12 @@ class DocumentController extends Controller
     public function viewDocument(Document $document)
     {
         // Check if user has access to the document
-        if ($document->owner_id !== Auth::id() && !$document->recipients()->where('department_id', Auth::user()->department_id)->exists()) {
+        // User can access if they are the owner OR if the document was sent to their department
+        $userDepartmentId = Auth::user()->department_id;
+        $hasAccess = $document->owner_id === Auth::id() ||
+                    $document->recipients()->where('department_id', $userDepartmentId)->exists();
+
+        if (!$hasAccess) {
             abort(403, 'Unauthorized access to document');
         }
 
@@ -456,11 +461,17 @@ class DocumentController extends Controller
         }
 
         // Check if user has access to the document
-        if ($document->owner_id !== Auth::id() && !$document->recipients()->where('department_id', Auth::user()->department_id)->exists()) {
+        // User can access if they are the owner OR if the document was sent to their department (department-wide visibility)
+        $userDepartmentId = Auth::user()->department_id;
+        $hasAccess = $document->owner_id === Auth::id() ||
+                    $document->recipients()->where('department_id', $userDepartmentId)->exists();
+
+        if (!$hasAccess) {
             Log::warning('User not authorized for document', [
                 'user_id' => Auth::id(),
                 'document_owner_id' => $document->owner_id,
-                'is_recipient' => $document->recipients()->where('department_id', Auth::user()->department_id)->exists()
+                'user_department_id' => $userDepartmentId,
+                'is_recipient' => $document->recipients()->where('department_id', $userDepartmentId)->exists()
             ]);
             abort(403, 'Unauthorized access to document');
         }

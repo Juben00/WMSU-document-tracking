@@ -78,6 +78,9 @@ class Document extends Model
             'job_orders' => 'Job Orders',
             'contract_of_service' => 'Contract of Service',
             'pr' => 'PR',
+            'appointment' => 'Appointment',
+            'purchase_order' => 'Purchase Order',
+            'other' => 'Other',
             default => 'Unknown'
         };
     }
@@ -103,6 +106,9 @@ class Document extends Model
             'job_orders' => 'Job Orders',
             'contract_of_service' => 'Contract of Service',
             'pr' => 'PR',
+            'appointment' => 'Appointment',
+            'purchase_order' => 'Purchase Order',
+            'other' => 'Other',
         ];
     }
 }

@@ -15,13 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MultiSelect } from '@/components/ui/multi-select';
 import Swal from 'sweetalert2';
-import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw, Star, ClipboardList, Megaphone, Info, CheckCircle, AlertCircle, Clock, Mail, Plane, MapPin, PartyPopper, Receipt, GraduationCap, CreditCard, Briefcase, FileSignature, FolderOpen } from 'lucide-react';
+import { FileText, FileCheck, Users, Building, Upload, ArrowLeft, RefreshCw, Star, ClipboardList, Megaphone, Info, CheckCircle, AlertCircle, Clock, Mail, Plane, MapPin, PartyPopper, Receipt, GraduationCap, CreditCard, Briefcase, FileSignature, FolderOpen, Calendar, ShoppingCart, File } from 'lucide-react';
 import Spinner from '@/components/spinner';
 
 type FormData = {
     subject: string;
     order_number: string;
-    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info' | 'letters' | 'email' | 'travel_order' | 'city_resolution' | 'invitations' | 'vouchers' | 'diploma' | 'checks' | 'job_orders' | 'contract_of_service' | 'pr';
+    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info' | 'letters' | 'email' | 'travel_order' | 'city_resolution' | 'invitations' | 'vouchers' | 'diploma' | 'checks' | 'job_orders' | 'contract_of_service' | 'pr' | 'appointment' | 'purchase_order' | 'other';
     description: string;
     files: File[];
     status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'returned';
@@ -252,15 +252,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
             return;
         }
 
-        if (data.files.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Files Selected',
-                text: 'Please upload at least one file.',
-                confirmButtonColor: '#b91c1c',
-            });
-            return;
-        }
+        // File upload is optional - no validation needed for files
 
         setIsSubmitting(true);
 
@@ -345,10 +337,12 @@ const CreateDocument = ({ auth, departments }: Props) => {
             }
         }
 
-        // Files
-        data.files.forEach((file, idx) => {
-            formData.append(`files[${idx}]`, file);
-        });
+        // Files (only append if files exist)
+        if (data.files.length > 0) {
+            data.files.forEach((file, idx) => {
+                formData.append(`files[${idx}]`, file);
+            });
+        }
 
         router.post(route('users.documents.send'), formData, {
             forceFormData: true,
@@ -565,6 +559,27 @@ const CreateDocument = ({ auth, departments }: Props) => {
             description: 'Public relations documents',
             color: 'from-red-500 to-pink-500'
         },
+        {
+            value: 'appointment',
+            label: 'Appointment',
+            icon: Calendar,
+            description: 'Appointment documents',
+            color: 'from-green-500 to-teal-500'
+        },
+        {
+            value: 'purchase_order',
+            label: 'Purchase Order',
+            icon: ShoppingCart,
+            description: 'Purchase order documents',
+            color: 'from-blue-500 to-cyan-500'
+        },
+        {
+            value: 'other',
+            label: 'Other',
+            icon: File,
+            description: 'Other documents',
+            color: 'from-gray-500 to-slate-500'
+        }
     ];
 
     const documentTypeOptions = isPresidentDepartment
@@ -993,9 +1008,9 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     <div>
                                         <label htmlFor="files" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                             <Upload className="w-5 h-5" />
-                                            Select Files <span className="text-red-500">*</span>
+                                            Select Files <span className="text-gray-400 dark:text-gray-500">(optional)</span>
                                         </label>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Upload PDF, Word, Excel, or image files</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Upload PDF, Word, Excel, or image files (optional)</p>
                                     </div>
                                 </div>
 
@@ -1036,7 +1051,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                             name="files"
                                             id="files"
                                             multiple
-                                            required
                                             ref={fileInputRef}
                                             className="absolute inset-0 opacity-0 cursor-pointer"
                                             onChange={handleFileChange}
@@ -1147,10 +1161,10 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                         </div>
 
                                         <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <div className={`w-3 h-3 rounded-full ${data.files.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                            <div className={`w-3 h-3 rounded-full ${data.files.length > 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
                                             <div>
                                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Files</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.files.length} file(s) selected</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.files.length} file(s) selected {data.files.length === 0 ? '(optional)' : ''}</p>
                                             </div>
                                         </div>
                                     </div>

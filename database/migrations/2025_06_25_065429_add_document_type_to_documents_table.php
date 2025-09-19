@@ -28,7 +28,10 @@ return new class extends Migration
                 'checks',
                 'job_orders',
                 'contract_of_service',
-                'pr'
+                'pr',
+                'appointment',
+                'purchase_order',
+                'other'
             ])->default('memorandum')->after('subject');
         });
 

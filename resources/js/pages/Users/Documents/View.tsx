@@ -57,7 +57,7 @@ interface DocumentRecipient {
 interface Document {
     id: number;
     subject: string;
-    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info' | 'letters' | 'email' | 'travel_order' | 'city_resolution' | 'invitations' | 'vouchers' | 'diploma' | 'checks' | 'job_orders' | 'contract_of_service' | 'pr';
+    document_type: 'special_order' | 'order' | 'memorandum' | 'for_info' | 'letters' | 'email' | 'travel_order' | 'city_resolution' | 'invitations' | 'vouchers' | 'diploma' | 'checks' | 'job_orders' | 'contract_of_service' | 'pr' | 'appointment' | 'purchase_order' | 'other';
     description?: string;
     status: string;
     created_at: string;
@@ -299,11 +299,13 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
 
     // Removed canForwardToOffice and its usages
     const canForwardToOffice = () => {
-        return canRespond() && isNotOwner() && !isReturned() && !isPending();
+        // removed isOwner()
+        return canRespond() && !isReturned() && !isPending();
     };
 
     const canForwardToOtherOffice = () => {
-        return canRespond() && isNotOwner() && !isReturned() && !isPending();
+        // removed isOwner()
+        return canRespond() && !isReturned() && !isPending();
     };
 
     const canReturnDocument = () => {
@@ -997,7 +999,7 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                                     <FileText className="w-8 h-8 text-gray-400" />
                                                 </div>
-                                                <p className="text-gray-500 dark:text-gray-400 font-medium">No original files uploaded.</p>
+                                                <p className="text-gray-500 dark:text-gray-400 font-medium">No files uploaded.</p>
                                             </div>
                                         )}
                                         {originalFiles.map((file) => (

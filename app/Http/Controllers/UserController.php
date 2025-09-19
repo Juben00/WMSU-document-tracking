@@ -132,14 +132,28 @@ class UserController extends Controller
             ->get();
 
         // Get documents where user is a recipient and has received the document
-        $receivedDocuments = Document::whereHas('recipients', function($query) {
-            $query->where('received_by', Auth::id())
+        // OR documents sent to the same department (department-wide visibility)
+        $userDepartmentId = Auth::user()->department_id;
+        $receivedDocuments = Document::whereHas('recipients', function($query) use ($userDepartmentId) {
+            $query->where(function($q) use ($userDepartmentId) {
+                // Documents received by the current user
+                $q->where('received_by', Auth::id())
                   ->where('status', 'received');
+            })->orWhere(function($q) use ($userDepartmentId) {
+                // Documents sent to the same department and received by any user in that department
+                $q->where('department_id', $userDepartmentId)
+                  ->where('status', 'received');
+            });
         })
         ->select('id', 'subject', 'document_type', 'status', 'created_at', 'owner_id', 'is_public', 'barcode_value', 'order_number')
-        ->with(['recipients' => function($q) {
-            $q->where('received_by', Auth::id())
-              ->where('status', 'received')
+        ->with(['recipients' => function($q) use ($userDepartmentId) {
+            $q->where(function($query) use ($userDepartmentId) {
+                $query->where('received_by', Auth::id())
+                      ->where('status', 'received');
+            })->orWhere(function($query) use ($userDepartmentId) {
+                $query->where('department_id', $userDepartmentId)
+                      ->where('status', 'received');
+            })
               ->select('id', 'document_id', 'department_id', 'status', 'received_by', 'sequence', 'received_at');
         }, 'files:id,document_id'])
         ->get();
@@ -319,7 +333,8 @@ class UserController extends Controller
             $departmentId = $currentUser->department_id;
             $department = $currentUser->department;
             $documentType = $request->input('document_type');
-            $currentYear = now()->year;
+            $currentDate = now();
+
 
             // Check if user has a department assigned
             if (!$department) {
@@ -340,12 +355,12 @@ class UserController extends Controller
                     'department_code' => $department->code,
                     'is_president_office' => $isPresidentOffice,
                     'document_type' => $documentType,
-                    'current_year' => $currentYear
+                    'current_date' => $currentDate
                 ]);
 
                 // Get the latest order number for this department and document type (excluding archived)
                 $query = Document::where('department_id', $departmentId)
-                    ->whereYear('created_at', $currentYear)
+                    ->whereDate('created_at', $currentDate)
                     ->where('status', '!=', 'archived');
 
                 if ($isPresidentOffice) {
@@ -397,12 +412,13 @@ class UserController extends Controller
 
                 do {
                     $attempt++;
-                    $orderNumber = sprintf('%s-%d-%03d', $departmentCode, $currentYear, $nextNumber);
+                    $dateString = $currentDate->format('mdy'); // MMDDYY format
+                    $orderNumber = sprintf('%s-%s-%03d', $departmentCode, $dateString, $nextNumber);
 
                     // Check if this order number already exists
                     $existingDocument = Document::where('order_number', $orderNumber)
                         ->where('department_id', $departmentId)
-                        ->whereYear('created_at', $currentYear)
+                        ->whereDate('created_at', $currentDate)
                         ->where('status', '!=', 'archived')
                         ->first();
 
@@ -586,35 +602,35 @@ class UserController extends Controller
 
         // Define validation rules based on department type
         $orderNumberRule = ['required', 'string', 'max:255'];
-        // Determine current fiscal year (calendar year)
-        $currentYear = now()->year;
+        // Determine current date for daily reset
+        $currentDate = now();
         if ($isPresidentOffice) {
-            // For President's office: unique per department, document_type, and order_number, but only for non-archived and current fiscal year
-            $orderNumberRule[] = function ($attribute, $value, $fail) use ($departmentId, $request, $currentYear) {
+            // For President's office: unique per department, document_type, and order_number, but only for non-archived and current day
+            $orderNumberRule[] = function ($attribute, $value, $fail) use ($departmentId, $request, $currentDate) {
                 $exists = Document::where('department_id', $departmentId)
                     ->where('document_type', $request->input('document_type'))
                     ->where('order_number', $value)
-                    ->where(function($query) use ($currentYear) {
+                    ->where(function($query) use ($currentDate) {
                         $query->where('status', '!=', 'archived')
-                              ->whereYear('created_at', $currentYear);
+                              ->whereDate('created_at', $currentDate);
                     })
                     ->exists();
                 if ($exists) {
-                    $fail('The order number has already been taken for this department and document type in the current fiscal year.');
+                    $fail('The order number has already been taken for this department and document type today.');
                 }
             };
         } else {
-            // For other departments: unique per department and order_number, but only for non-archived and current fiscal year
-            $orderNumberRule[] = function ($attribute, $value, $fail) use ($departmentId, $currentYear) {
+            // For other departments: unique per department and order_number, but only for non-archived and current day
+            $orderNumberRule[] = function ($attribute, $value, $fail) use ($departmentId, $currentDate) {
                 $exists = Document::where('department_id', $departmentId)
                     ->where('order_number', $value)
-                    ->where(function($query) use ($currentYear) {
+                    ->where(function($query) use ($currentDate) {
                         $query->where('status', '!=', 'archived')
-                              ->whereYear('created_at', $currentYear);
+                              ->whereDate('created_at', $currentDate);
                     })
                     ->exists();
                 if ($exists) {
-                    $fail('The order number has already been taken for this department in the current fiscal year.');
+                    $fail('The order number has already been taken for this department today.');
                 }
             };
         }
@@ -626,8 +642,8 @@ class UserController extends Controller
             'order_number' => 'required|string|max:255',
             'document_type' => 'required|in:special_order,order,memorandum,for_info,letters,email,travel_order,city_resolution,invitations,vouchers,diploma,checks,job_orders,contract_of_service,pr',
             'description' => 'nullable|string',
-            'files' => 'required|array',
-            'files.*' => 'required|file|max:10240', // 10MB max per file
+            'files' => 'nullable|array',
+            'files.*' => 'nullable|file|max:10240', // 10MB max per file
             'recipient_ids' => 'required|array|min:1',
             'recipient_ids.*' => 'exists:departments,id',
             'initial_recipient_id' => 'nullable|exists:departments,id',
@@ -664,7 +680,7 @@ class UserController extends Controller
         // Final check to ensure order number is unique
         $existingDocument = Document::where('order_number', $validated['order_number'])
             ->where('department_id', $departmentId)
-            ->whereYear('created_at', $currentYear)
+            ->whereDate('created_at', $currentDate)
             ->first();
 
         if ($existingDocument) {
@@ -722,11 +738,10 @@ class UserController extends Controller
         $currentUser = Auth::user();
         $department = $currentUser->department;
         $departmentCode = $department ? $department->code : 'NOCODE';
-        $timestamp = now()->format('YmdHis'); // Format: YYYYMMDDHHMMSS
-        $userId = $currentUser->id;
 
-        // Generate unique barcode value: Department Code + Timestamp + User ID
-        $barcodeValue = $departmentCode . $timestamp . $userId;
+        // use the value of order_number as the barcode value but without the dashes
+        $barcodeValue = $document->order_number;
+        $barcodeValue = str_replace('-', '', $barcodeValue);
 
         // Generate barcode SVG
         $generator = new BarcodeGeneratorSVG();
@@ -767,17 +782,19 @@ class UserController extends Controller
             'created_at' => now(),
         ]);
 
-        // Handle multiple file uploads
-        foreach ($request->file('files') as $file) {
-            $filePath = $file->store('documents', 'public');
-            $document->files()->create([
-                'file_path' => 'public/'. $filePath,
-                'original_filename' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
-                'uploaded_by' => Auth::id(),
-                'upload_type' => 'original',
-            ]);
+        // Handle multiple file uploads (only if files are provided)
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $filePath = $file->store('documents', 'public');
+                $document->files()->create([
+                    'file_path' => 'public/'. $filePath,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'uploaded_by' => Auth::id(),
+                    'upload_type' => 'original',
+                ]);
+            }
         }
 
         // Notify the document owner
@@ -942,28 +959,28 @@ class UserController extends Controller
         // $orderNumberRule = 'required|string|max:255';
         $orderNumberRule = ['required', 'string', 'max:255'];
         // In updateDocument, skip the current document's id
-        $currentYear = now()->year;
+        $currentDate = now();
         if ($isPresidentOffice) {
-            $orderNumberRule[] = function ($attribute, $value, $fail) use ($doc, $currentYear) {
+            $orderNumberRule[] = function ($attribute, $value, $fail) use ($doc, $currentDate) {
                 $exists = Document::where('department_id', $doc->department_id)
                     ->where('document_type', $doc->document_type)
                     ->where('order_number', $value)
-                    ->whereYear('created_at', $currentYear)
+                    ->whereDate('created_at', $currentDate)
                     ->where('id', '!=', $doc->id)
                     ->exists();
                 if ($exists) {
-                    $fail('The order number has already been taken for this department and document type in the current fiscal year.');
+                    $fail('The order number has already been taken for this department and document type today.');
                 }
             };
         } else {
-            $orderNumberRule[] = function ($attribute, $value, $fail) use ($doc, $currentYear) {
+            $orderNumberRule[] = function ($attribute, $value, $fail) use ($doc, $currentDate) {
                 $exists = Document::where('department_id', $doc->department_id)
                     ->where('order_number', $value)
-                    ->whereYear('created_at', $currentYear)
+                    ->whereDate('created_at', $currentDate)
                     ->where('id', '!=', $doc->id)
                     ->exists();
                 if ($exists) {
-                    $fail('The order number has already been taken for this department in the current fiscal year.');
+                    $fail('The order number has already been taken for this department today.');
                 }
             };
         }
@@ -1201,7 +1218,7 @@ class UserController extends Controller
                 ];
             });
 
-        // Get documents where user is a recipient - Fix: Use user's department_id
+        // Get documents where user is a recipient or sent to their department - department-wide visibility
         $receivedDocuments = Document::whereHas('recipients', function($query) use ($userDepartmentId) {
             $query->where('department_id', $userDepartmentId);
         })

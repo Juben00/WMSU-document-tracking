@@ -232,10 +232,10 @@ const Documents = ({ documents, auth, document_data }: Props) => {
                 (doc.department_id && doc.department_id === departmentId)
             );
         }
-        // For other types, keep the sequential logic if needed
+        // For other types, allow department-wide visibility:
+        // Users in the same department can see documents sent to their department
         return (
-            (doc.user_id && doc.user_id === userId)
-            ||
+            (doc.user_id && doc.user_id === userId) ||
             (doc.department_id && doc.department_id === departmentId)
         );
     };
@@ -280,6 +280,7 @@ const Documents = ({ documents, auth, document_data }: Props) => {
             );
         }
         // fallback: check doc.department_id and recipient_status
+        // Allow department-wide visibility: if document is sent to the department, all users can see it
         return doc.department_id === departmentId && doc.recipient_status === "received";
     };
 
