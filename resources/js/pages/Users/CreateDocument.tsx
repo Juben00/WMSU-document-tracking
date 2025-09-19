@@ -556,7 +556,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
             value: 'pr',
             label: 'PR',
             icon: FolderOpen,
-            description: 'Public relations documents',
+            description: 'Purchase Request',
             color: 'from-red-500 to-pink-500'
         },
         {
