@@ -53,6 +53,7 @@ interface Document {
 
 interface Props {
     documents: Document[]
+    receivedDocuments?: Document[]
     auth: {
         user: {
             id: number
@@ -68,7 +69,24 @@ interface Props {
     }
 }
 
-const Documents = ({ documents, auth, document_data }: Props) => {
+const Documents = ({ documents = [], receivedDocuments = [], auth, document_data }: Props) => {
+    // Ensure documents is always an array to prevent TypeError
+    const documentsArray = Array.isArray(documents) ? documents : [];
+    const receivedDocumentsArray = Array.isArray(receivedDocuments) ? receivedDocuments : [];
+
+    // Debug logging
+    console.log('Documents Debug Info:', {
+        documents: documentsArray,
+        receivedDocuments: receivedDocumentsArray,
+        documentsType: typeof documents,
+        receivedDocumentsType: typeof receivedDocuments,
+        authUser: auth.user
+    });
+
+    // Merge documents and receivedDocuments, removing duplicates by id
+    const allDocuments = [...documentsArray, ...receivedDocumentsArray]
+        .filter((doc, index, self) => index === self.findIndex(d => d.id === doc.id));
+
     const [activeTab, setActiveTab] = useState("received")
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
@@ -209,7 +227,7 @@ const Documents = ({ documents, auth, document_data }: Props) => {
 
     const getAvailableFiscalYears = () => {
         const years = new Set<number>()
-        documents.forEach((doc) => {
+        allDocuments.forEach((doc) => {
             years.add(getFiscalYear(doc.created_at))
         })
         return Array.from(years).sort((a, b) => b - a)
@@ -252,6 +270,10 @@ const Documents = ({ documents, auth, document_data }: Props) => {
     // Group by document_id and get the record with the max sequence (for non-for_info), or all for_info docs
     const getLatestDocumentRecords = (docs: Document[]) => {
         const map = new Map<number, Document>();
+        // Safety check: ensure docs is an array
+        if (!Array.isArray(docs)) {
+            return [];
+        }
         docs.forEach(doc => {
             if (doc.document_type === "for_info") {
                 // For for_info, just keep the latest (or any, since all can receive)
@@ -267,7 +289,7 @@ const Documents = ({ documents, auth, document_data }: Props) => {
         return Array.from(map.values());
     };
 
-    const latestDocs = getLatestDocumentRecords(documents);
+    const latestDocs = getLatestDocumentRecords(allDocuments);
 
     // Helper to check if a for_info document is received by the current user's department
     const isForInfoReceivedByDepartment = (doc: Document) => {
@@ -287,14 +309,31 @@ const Documents = ({ documents, auth, document_data }: Props) => {
     // Received: documents where the current user/department is the latest recipient AND the latest recipient's status is 'received'
     // BUT exclude documents where the current user is the owner (those should be in sent)
     const received = latestDocs.filter(
-        (doc) =>
-            isInCurrentFiscalYear(doc.created_at) &&
-            // doc.owner_id !== auth.user.id && // Exclude documents owned by current user
-            (doc.owner_id !== auth.user.id || doc.status === "returned") &&
-            (
-                (doc.document_type === "for_info" && isForInfoReceivedByDepartment(doc)) ||
-                (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"))
-            )
+        (doc) => {
+            const isCurrentFiscalYearDoc = isInCurrentFiscalYear(doc.created_at);
+            const isNotOwnerOrReturned = (doc.owner_id !== auth.user.id || doc.status === "returned");
+            const isForInfoReceived = (doc.document_type === "for_info" && isForInfoReceivedByDepartment(doc));
+            const isNonForInfoReceived = (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"));
+
+            const shouldInclude = isCurrentFiscalYearDoc && isNotOwnerOrReturned && (isForInfoReceived || isNonForInfoReceived);
+
+            // Debug logging for received documents filtering
+            console.log(`Document ${doc.id} (${doc.subject}) filtering:`, {
+                isCurrentFiscalYearDoc,
+                isNotOwnerOrReturned,
+                isForInfoReceived,
+                isNonForInfoReceived,
+                shouldInclude,
+                document_type: doc.document_type,
+                recipient_status: doc.recipient_status,
+                owner_id: doc.owner_id,
+                current_user_id: auth.user.id,
+                department_id: doc.department_id,
+                user_department_id: (auth.user as any).department_id
+            });
+
+            return shouldInclude;
+        }
     );
 
     // Sent: documents where the user is the owner and they are not in received list
@@ -305,10 +344,10 @@ const Documents = ({ documents, auth, document_data }: Props) => {
         && doc.recipient_status !== "returned"
     );
 
-    const published = documents.filter((doc) => doc.owner_id === auth.user.id && (doc as any).is_public)
+    const published = allDocuments.filter((doc) => doc.owner_id === auth.user.id && (doc as any).is_public)
 
     // Archived documents are those not in the current fiscal year
-    const archived = documents.filter((doc) => !isInCurrentFiscalYear(doc.created_at))
+    const archived = allDocuments.filter((doc) => !isInCurrentFiscalYear(doc.created_at))
 
     const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
         switch (status) {
@@ -628,35 +667,40 @@ const Documents = ({ documents, auth, document_data }: Props) => {
 
                                 {/* Fiscal Year Filter - Only show for archived tab */}
                                 {activeTab === "archived" && (
-                                    <Select value={fiscalYearFilter} onValueChange={setFiscalYearFilter}>
-                                        <SelectTrigger className="bg-white dark:bg-gray-800 h-12">
-                                            <Calendar className="w-4 h-4 mr-2" />
-                                            <SelectValue placeholder="All Years" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Years</SelectItem>
-                                            {getAvailableFiscalYears().map((year) => (
-                                                <SelectItem key={year} value={year.toString()}>
-                                                    {year}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="bg-white dark:bg-gray-800 h-12 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <Select value={fiscalYearFilter} onValueChange={setFiscalYearFilter}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-800 h-12 border-none">
+                                                <Calendar className="w-4 h-4 mr-2" />
+                                                <SelectValue placeholder="All Years" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Years</SelectItem>
+                                                {getAvailableFiscalYears().map((year) => (
+                                                    <SelectItem key={year} value={year.toString()}>
+                                                        {year}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
 
                                 {/* Archived Type Filter - Only show for archived tab */}
                                 {activeTab === "archived" && (
-                                    <Select value={archivedFilter} onValueChange={setArchivedFilter}>
-                                        <SelectTrigger className="bg-white dark:bg-gray-800 h-12">
-                                            <Archive className="w-4 h-4 mr-2" />
-                                            <SelectValue placeholder="All Types" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Types</SelectItem>
-                                            <SelectItem value="sent">Sent</SelectItem>
-                                            <SelectItem value="received">Received</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="bg-white dark:bg-gray-800 h-12 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 rounded-lg">
+
+                                        <Select value={archivedFilter} onValueChange={setArchivedFilter}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-800 h-12 border-none">
+                                                <Archive className="w-4 h-4 mr-2" />
+                                                <SelectValue placeholder="All Types" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="sent">Sent</SelectItem>
+                                                <SelectItem value="received">Received</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
 
                                 {/* Overstayed Filter - Only show for received tab */}

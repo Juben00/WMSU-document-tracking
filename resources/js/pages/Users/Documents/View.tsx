@@ -67,6 +67,7 @@ interface Document {
         department?: {
             id: number;
             name: string;
+            is_presidential: boolean;
         };
     };
     files: DocumentFile[];
@@ -110,6 +111,11 @@ interface Props {
             id: number;
             role: string;
             department_id: number;
+            department?: {
+                id: number;
+                name: string;
+                is_presidential: boolean;
+            };
         };
     };
     departments?: Array<{
@@ -278,6 +284,9 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
     const isReturned = () => document.status === 'returned';
     const isPending = () => document.status === 'pending';
     const notApprovedAndRejected = () => !['approved', 'rejected'].includes(document.status);
+    const senderIsPresident = () => document.owner.department?.is_presidential || false;
+
+    console.log('sender is president', senderIsPresident());
 
     // Action permission checks
     const canMarkAsReceived = () => {
@@ -288,7 +297,7 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
     };
 
     const canApproveOrReject = () => {
-        return canRespond() && isNonForInfoDocument() && isFinalRecipient() && !isReturned() && notApprovedAndRejected();
+        return canRespond() && isNonForInfoDocument() && isFinalRecipient() && !isReturned() && notApprovedAndRejected() && !senderIsPresident();
     };
 
     console.log('can respond', canRespond());

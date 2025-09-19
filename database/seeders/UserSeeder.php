@@ -44,8 +44,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Flores',
-            'last_name' => 'Berhana',
+            'first_name' => 'Berhana',
+            'last_name' => 'Flores',
             'middle_name' => 'Ignacio',
             'suffix' => '',
             'gender' => 'Female',
@@ -57,8 +57,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Valerio',
-            'last_name' => 'Aldrin',
+            'first_name' => 'Aldrin',
+            'last_name' => 'Valerio',
             'middle_name' => 'Sebastian',
             'suffix' => '',
             'gender' => 'Male',
@@ -70,8 +70,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Flores',
-            'last_name' => 'Darlyn',
+            'first_name' => 'Darlyn',
+            'last_name' => 'Flores',
             'middle_name' => 'Perez',
             'suffix' => '',
             'gender' => 'Female',
@@ -83,8 +83,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Kassim',
-            'last_name' => 'Shamir',
+            'first_name' => 'Shamir',
+            'last_name' => 'Kassim',
             'middle_name' => 'Reyes',
             'suffix' => '',
             'gender' => 'Female',
@@ -96,8 +96,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Atilano',
-            'last_name' => 'Trinity Jade',
+            'first_name' => 'Trinity Jade',
+            'last_name' => 'Atilano',
             'middle_name' => 'Lledo',
             'suffix' => '',
             'gender' => 'Female',
@@ -109,8 +109,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Jukuy',
-            'last_name' => 'Jhema Lyne',
+            'first_name' => 'Jhema Lyne',
+            'last_name' => 'Jukuy',
             'middle_name' => 'Sahi',
             'suffix' => '',
             'gender' => 'Female',
@@ -122,8 +122,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Gabuni',
-            'last_name' => 'Aimee',
+            'first_name' => 'Aimee',
+            'last_name' => 'Gabuni',
             'middle_name' => 'Encarnado',
             'suffix' => '',
             'gender' => 'Female',
@@ -135,8 +135,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Adasa',
-            'last_name' => 'Jose Raul',
+            'first_name' => 'Jose Raul',
+            'last_name' => 'Adasa',
             'middle_name' => 'B.',
             'suffix' => '',
             'gender' => 'Male',
@@ -148,8 +148,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'Sumaga',
-            'last_name' => 'Jennife',
+            'first_name' => 'Jennifer',
+            'last_name' => 'Sumaga',
             'middle_name' => 'L.',
             'suffix' => '',
             'gender' => 'Female',
@@ -161,8 +161,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create(attributes: [
-            'first_name' => 'Dumagal',
-            'last_name' => 'Ariel',
+            'first_name' => 'Ariel',
+            'last_name' => 'Dumagal',
             'middle_name' => '',
             'suffix' => '',
             'gender' => 'Male',
@@ -175,8 +175,8 @@ class UserSeeder extends Seeder
 
 
         User::factory()->create(attributes: [
-            'first_name' => 'Agno',
-            'last_name' => 'Stephen Lloyd',
+            'first_name' => 'Stephen Lloyd',
+            'last_name' => 'Agno',
             'middle_name' => 'Lim',
             'suffix' => '',
             'gender' => 'Male',
@@ -188,8 +188,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create(attributes: [
-            'first_name' => 'Gutierez',
-            'last_name' => 'Catherine',
+            'first_name' => 'Catherine',
+            'last_name' => 'Gutierez',
             'middle_name' => 'Diongson',
             'suffix' => '',
             'gender' => 'Female',
@@ -204,8 +204,8 @@ class UserSeeder extends Seeder
 
         // OVP
         User::factory()->create([
-            'first_name' => 'Vice',
-            'last_name' => 'President',
+            'first_name' => 'President',
+            'last_name' => 'Vice',
             'middle_name' => '',
             'suffix' => 'Suffix',
             'gender' => 'Male',
