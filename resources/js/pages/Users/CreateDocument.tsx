@@ -82,11 +82,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
     // Function to generate auto order number with robust CSRF handling
     const generateOrderNumber = async (retryCount = 0) => {
-        if (!data.document_type) {
-            console.warn("Document type is required to generate order number");
-            return;
-        }
-
         if (isGeneratingRef.current) {
             console.warn("Order number generation already in progress");
             return;
@@ -96,7 +91,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
-            console.log(`Generating order number for ${data.document_type} (attempt ${retryCount + 1})`);
+            console.log(`Generating order number (attempt ${retryCount + 1})`);
 
             // Wait for CSRF token to be available on first attempt
             if (retryCount === 0 && !csrfToken) {
@@ -106,7 +101,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
             const response = await axios.post(
                 route("users.documents.generate-order-number"),
-                { document_type: data.document_type }
+                {}
             );
 
             if (response.data?.order_number) {
@@ -178,9 +173,9 @@ const CreateDocument = ({ auth, departments }: Props) => {
         }
     };
 
-    // Auto-generate order number when document type changes and auto-generate is enabled
+    // Auto-generate order number when auto-generate is enabled
     useEffect(() => {
-        if (data.auto_generate_order_number && data.document_type && csrfToken) {
+        if (data.auto_generate_order_number && csrfToken) {
             // Clear existing timeout
             if (generateOrderNumberTimeoutRef.current) {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
@@ -202,7 +197,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
     // Handle auto-generation toggle changes
     useEffect(() => {
-        if (data.auto_generate_order_number && data.document_type && csrfToken) {
+        if (data.auto_generate_order_number && csrfToken) {
             // Clear existing timeout
             if (generateOrderNumberTimeoutRef.current) {
                 clearTimeout(generateOrderNumberTimeoutRef.current);
@@ -1132,40 +1127,51 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <div className={`w-3 h-3 rounded-full ${data.document_type ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.document_type ? documentTypeOptions.find(opt => opt.value === data.document_type)?.label : 'Not selected'}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <div className={`w-3 h-3 rounded-full ${data.subject ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Subject</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.subject || 'Not filled'}</p>
-                                            </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <div className={`w-3 h-3 rounded-full ${data.document_type ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{data.document_type ? documentTypeOptions.find(opt => opt.value === data.document_type)?.label : 'Not selected'}</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <div className={`w-3 h-3 rounded-full ${data.order_number ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Order Number</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.order_number || 'Not generated'}</p>
-                                            </div>
+                                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <div className={`w-3 h-3 rounded-full ${data.order_number ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Order Number</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{data.order_number || 'Not generated'}</p>
                                         </div>
+                                    </div>
 
-                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
-                                            <div className={`w-3 h-3 rounded-full ${data.files.length > 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Files</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{data.files.length} file(s) selected {data.files.length === 0 ? '(optional)' : ''}</p>
-                                            </div>
+                                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <div className={`w-3 h-3 rounded-full ${data.subject ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Subject</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{data.subject || 'Not filled'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <div className={`w-3 h-3 rounded-full ${data.description ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{data.description ? (data.description.length > 50 ? data.description.substring(0, 50) + '...' : data.description) : 'Not filled'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <div className={`w-3 h-3 rounded-full ${(data.document_type === 'for_info' ? data.recipient_ids.length > 0 : sendToId) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Recipients</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {data.document_type === 'for_info'
+                                                    ? `${data.recipient_ids.length} department(s) selected`
+                                                    : sendToId
+                                                        ? `${departments.find(d => d.id === sendToId)?.name || 'Selected department'}`
+                                                        : 'No recipient selected'
+                                                }
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

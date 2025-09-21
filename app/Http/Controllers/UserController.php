@@ -310,12 +310,7 @@ class UserController extends Controller
             // Basic logging for debugging
             Log::info('Order number generation request', [
                 'user_id' => Auth::id(),
-                'document_type' => $request->input('document_type'),
                 'ip' => $request->ip()
-            ]);
-
-            $request->validate([
-                'document_type' => 'required|in:special_order,order,memorandum,for_info,letters,email,travel_order,city_resolution,invitations,vouchers,diploma,checks,job_orders,contract_of_service,pr',
             ]);
 
             $currentUser = Auth::user();
@@ -332,7 +327,6 @@ class UserController extends Controller
 
             $departmentId = $currentUser->department_id;
             $department = $currentUser->department;
-            $documentType = $request->input('document_type');
             $currentDate = now();
 
 
@@ -354,25 +348,19 @@ class UserController extends Controller
                     'department_id' => $departmentId,
                     'department_code' => $department->code,
                     'is_president_office' => $isPresidentOffice,
-                    'document_type' => $documentType,
                     'current_date' => $currentDate
                 ]);
 
-                // Get the latest order number for this department and document type (excluding archived)
+                // Get the latest order number for this department (excluding archived)
                 $query = Document::where('department_id', $departmentId)
                     ->whereDate('created_at', $currentDate)
                     ->where('status', '!=', 'archived');
-
-                if ($isPresidentOffice) {
-                    $query->where('document_type', $documentType);
-                }
 
                 $latestDocument = $query->orderBy('order_number', 'desc')->first();
 
                 Log::info('Latest document found', [
                     'latest_document' => $latestDocument ? $latestDocument->order_number : 'none',
                     'department_id' => $departmentId,
-                    'document_type' => $documentType,
                     'is_president_office' => $isPresidentOffice
                 ]);
 
@@ -446,7 +434,6 @@ class UserController extends Controller
                 Log::info('Order number generated successfully', [
                     'user_id' => $currentUser->id,
                     'department_id' => $departmentId,
-                    'document_type' => $documentType,
                     'order_number' => $orderNumber
                 ]);
 
@@ -459,19 +446,11 @@ class UserController extends Controller
                 throw $e;
             }
 
-        } catch (ValidationException $e) {
-            Log::warning('Validation error in generateOrderNumber', [
-                'errors' => $e->errors(),
-                'user_id' => Auth::id()
-            ]);
-            return response()->json(['error' => 'Invalid document type provided.'], 422);
-
         } catch (Exception $e) {
             Log::error('Error generating order number', [
                 'error' => $e->getMessage(),
                 'error_trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id(),
-                'document_type' => $request->input('document_type'),
                 'department_id' => Auth::user()?->department_id,
                 'department_code' => Auth::user()?->department?->code,
                 'current_year' => now()->year
