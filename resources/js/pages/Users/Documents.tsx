@@ -144,7 +144,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                         </div>
 
                         <!-- Barcode Container -->
-                        <div id="barcode-container" class="mb-4"></div>
+                        <div id="barcode-container" class="mb-2"></div>
                     </div>
                 `,
                 confirmButtonColor: '#b91c1c',

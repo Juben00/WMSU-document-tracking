@@ -40,12 +40,20 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         }
     }, []);
 
-    const submit: FormEventHandler = (e) => {
+    const submit: FormEventHandler = async (e) => {
         e.preventDefault();
+
+        // Refresh CSRF cookie before login
+        await fetch('/sanctum/csrf-cookie', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
         post(route('login'), {
             onFinish: () => reset('password'),
         });
     };
+
 
     return (
         <>

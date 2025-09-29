@@ -247,8 +247,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
             return;
         }
 
-        // File upload is optional - no validation needed for files
-
         setIsSubmitting(true);
 
         // For 'for_info', must have at least one recipient
@@ -686,7 +684,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                 {/* Order Number */}
                                 <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+                                        <div className="w-2 h-8 bg-gradient-to-b from-red-500 to-red-600 rounded-full"></div>
                                         <div>
                                             <label htmlFor="order_number" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                                 Order Number <span className="text-red-500">*</span>
@@ -816,7 +814,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                 {/* Subject */}
                                 <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+                                        <div className="w-2 h-8 bg-gradient-to-b from-red-500 to-red-600 rounded-full"></div>
                                         <div>
                                             <label htmlFor="subject" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                                 Subject <span className="text-red-500">*</span>
@@ -840,7 +838,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                 {/* Description */}
                                 <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+                                        <div className="w-2 h-8 bg-gradient-to-b from-red-500 to-red-600 rounded-full"></div>
                                         <div>
                                             <label htmlFor="description" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                                 Description <span className="text-red-500">*</span>
@@ -898,14 +896,14 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                     {/* Recipients Section */}
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-blue-100 dark:border-blue-800/30">
+                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-blue-100 dark:border-blue-800/30">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
+                                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <Users className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recipients</h2>
-                                    <p className="text-blue-600 dark:text-blue-400 text-sm font-medium mt-1">Step 2 of 4 • Select document recipients</p>
+                                    <p className="text-red-600 dark:text-red-400 text-sm font-medium mt-1">Step 2 of 4 • Select document recipients</p>
                                 </div>
                             </div>
                         </div>
@@ -984,14 +982,14 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                     {/* Files Section */}
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-green-100 dark:border-green-800/30">
+                        <div className="bg-gradient-to-r from-red-50 to-emerald-50 dark:from-red-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
+                                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <Upload className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upload Documents</h2>
-                                    <p className="text-green-600 dark:text-green-400 text-sm font-medium mt-1">Step 3 of 4 • Attach your document files</p>
+                                    <p className="text-red-600 dark:text-red-400 text-sm font-medium mt-1">Step 3 of 4 • Attach your document files</p>
                                 </div>
                             </div>
                         </div>
@@ -999,7 +997,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                             <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full"></div>
+                                    <div className="w-2 h-8 bg-gradient-to-b from-red-500 to-red-600 rounded-full"></div>
                                     <div>
                                         <label htmlFor="files" className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                             <Upload className="w-5 h-5" />
@@ -1020,17 +1018,17 @@ const CreateDocument = ({ auth, departments }: Props) => {
                                     onDragOver={e => { e.preventDefault(); setIsDragActive(true); }}
                                     onDragLeave={e => { e.preventDefault(); setIsDragActive(false); }}
                                 >
-                                    <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 cursor-pointer transition-all duration-300 ${isDragActive ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg scale-105' : 'border-green-300 dark:border-green-600 bg-white dark:bg-gray-800 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/10 hover:shadow-md'}`}>
-                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${isDragActive ? 'bg-green-500 shadow-lg scale-110' : 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-800 dark:to-green-700 group-hover:from-green-200 group-hover:to-green-300'}`}>
-                                            <Upload className={`w-8 h-8 transition-all duration-300 ${isDragActive ? 'text-white' : 'text-green-600 dark:text-green-300'}`} />
+                                    <div className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-12 cursor-pointer transition-all duration-300 ${isDragActive ? 'border-red-500 bg-red-50 dark:bg-red-900/20 shadow-lg scale-105' : 'border-red-300 dark:border-red-600 bg-white dark:bg-gray-800 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 hover:shadow-md'}`}>
+                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${isDragActive ? 'bg-red-500 shadow-lg scale-110' : 'bg-gradient-to-br from-red-100 to-red-200 dark:from-red-800 dark:to-red-700 group-hover:from-red-200 group-hover:to-red-300'}`}>
+                                            <Upload className={`w-8 h-8 transition-all duration-300 ${isDragActive ? 'text-white' : 'text-red-600 dark:text-red-300'}`} />
                                         </div>
 
                                         <div className="text-center">
-                                            <h3 className={`text-xl font-bold mb-2 transition-colors ${isDragActive ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                                            <h3 className={`text-xl font-bold mb-2 transition-colors ${isDragActive ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-200'}`}>
                                                 {isDragActive ? 'Drop your files here!' : 'Upload your documents'}
                                             </h3>
                                             <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                                Drag & drop files here, or <span className="font-semibold text-green-600 dark:text-green-400 underline">browse your computer</span>
+                                                Drag & drop files here, or <span className="font-semibold text-red-600 dark:text-red-400 underline">browse your computer</span>
                                             </p>
 
                                             <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1106,12 +1104,12 @@ const CreateDocument = ({ auth, departments }: Props) => {
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
                         <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-purple-100 dark:border-purple-800/30">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg">
+                                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <FileCheck className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Send Document</h2>
-                                    <p className="text-purple-600 dark:text-purple-400 text-sm font-medium mt-1">Step 4 of 4 • Review and submit your document</p>
+                                    <p className="text-red-600 dark:text-red-400 text-sm font-medium mt-1">Step 4 of 4 • Review and submit your document</p>
                                 </div>
                             </div>
                         </div>
@@ -1120,7 +1118,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
                             {/* Summary Card */}
                             <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl p-6 border border-gray-200/50 dark:border-gray-600/50 shadow-sm mb-8">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+                                    <div className="w-2 h-8 bg-gradient-to-b from-red-500 to-red-600 rounded-full"></div>
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Review Summary</h3>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Double-check your information before Sending</p>

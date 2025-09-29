@@ -121,7 +121,11 @@ const Navbar = () => {
         setNotifOpen(false);
 
         // Perform logout
-        router.post(route('logout'));
+        router.post(route('logout'), {}, {
+            onFinish: () => {
+                window.location.href = route('login'); // force reload, ensures new CSRF
+            }
+        });
     };
 
     useEffect(() => {

@@ -303,70 +303,67 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
     };
 
     return (
-        <div className={`bg-white p-2 dark:bg-gray-800 rounded-xl  border border-gray-200 dark:border-gray-700 overflow-hidden max-w-md mx-auto ${className}`}>
-            <div ref={barcodeRef} className="p-2 text-center">
+        <div
+            className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 max-w-md mx-auto p-6 ${className}`}
+        >
+            {/* Barcode Display */}
+            <div className="flex flex-col items-center space-y-4">
+                {barcode_path ? (
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 shadow-inner">
+                        <img
+                            src={`/storage/${barcode_path}`}
+                            alt="Document Barcode"
+                            className="max-h-32 mx-auto"
+                            style={{ imageRendering: 'pixelated' }}
+                        />
+                    </div>
+                ) : (
+                    <div className="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            No barcode available
+                        </p>
+                    </div>
+                )}
 
-                {/* Barcode Display */}
-                <div className=" w-full">
-                    {barcode_path ? (
-                        <div className="inline-block p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-600">
-                            <img
-                                src={`/storage/${barcode_path}`}
-                                alt="Document Barcode"
-                                className="max-w-full h-auto max-h-32 mx-auto"
-                                style={{ imageRendering: 'pixelated' }}
-                                onError={(e) => {
-                                    console.error('Failed to load barcode image:', e);
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <div className="inline-block p-8 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">No barcode available</p>
-                        </div>
-                    )}
-                </div>
+                {/* Barcode Value & Actions */}
+                <div className="w-full bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 px-5 py-3 flex items-center justify-between shadow-sm">
+                    <span className="font-mono text-lg font-semibold text-gray-800 dark:text-gray-200 tracking-wide">
+                        {barcode_value || "N/A"}
+                    </span>
 
-                {/* Barcode Value */}
-                <div className=" w-full">
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 px-9 border border-gray-200 dark:border-gray-600 inline-block">
-                        <div className="flex items-center gap-3">
-                            <span className="font-mono text-lg font-bold text-gray-800 dark:text-gray-200">
-                                {barcode_value || 'N/A'}
-                            </span>
-                            {barcode_value && (
-                                <button
-                                    onClick={handleCopy}
-                                    className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                                    title={copied ? 'Copied!' : 'Copy barcode value'}
-                                    type="button"
-                                >
-                                    <Copy className="w-4 h-4" />
-                                </button>
-                            )}
-                            {/* Download Button */}
+                    <div className="flex items-center gap-2">
+                        {barcode_value && (
                             <button
-                                onClick={generateDocument}
-                                disabled={downloading}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                                type="button"
-                                title="Download as Word Document"
+                                onClick={handleCopy}
+                                className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                title={copied ? "Copied!" : "Copy barcode value"}
                             >
-                                <Download className={`w-4 h-4 ${downloading ? 'animate-bounce' : ''}`} />
+                                <Copy className="w-4 h-4" />
                             </button>
-                        </div>
-                        {copied && (
-                            <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
-                                Copied!
-                            </p>
                         )}
+                        <button
+                            onClick={generateDocument}
+                            disabled={downloading}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Download as Word Document"
+                        >
+                            <Download
+                                className={`w-4 h-4 ${downloading ? "animate-bounce" : ""}`}
+                            />
+                            <span className="hidden sm:inline">Download</span>
+                        </button>
                     </div>
                 </div>
 
-
+                {copied && (
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                        Copied to clipboard!
+                    </p>
+                )}
             </div>
         </div>
     );
+
 };
 
 export default BarcodeComponent;
