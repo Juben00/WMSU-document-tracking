@@ -1,13 +1,15 @@
 import Navbar from '@/components/User/navbar'
-import React, { useState, useEffect } from 'react'
+import React, { useState, } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Users, Building, UserPlus, User } from 'lucide-react'
+import { Pencil, Trash2, Users, UserPlus } from 'lucide-react'
+import Spinner from '@/components/spinner'
 import InputError from '@/components/input-error'
 import Swal from 'sweetalert2'
+import TabHeader from '@/components/User/tab-header'
 import {
     Table,
     TableBody,
@@ -62,9 +64,6 @@ const Offices = ({ auth, users }: Props) => {
         password: 'password',
         password_confirmation: 'password',
     });
-
-    // Check if there's already a receiver in the office
-    const hasReceiver = users.some(user => user.role === 'receiver');
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -139,35 +138,26 @@ const Offices = ({ auth, users }: Props) => {
         });
     };
 
-    console.log(auth.user);
-
     return (
         <>
+            {processing && <Spinner />}
             <Navbar />
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Header Section */}
                     <div className="mb-8">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
-                                    <Building className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{auth.user.department?.name || "Department"}</h1>
-                                    <p className="text-gray-600 dark:text-gray-300 mt-1">Manage the users within your department.</p>
-                                </div>
-                            </div>
+                            <TabHeader title={auth.user.department?.name || "Department"} description="Manage the users within your department." />
                             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                                 <DialogTrigger asChild>
                                     <Button className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2">
                                         <UserPlus className="h-5 w-5" />
-                                        Create User
+                                        <span className="hidden md:block">Create User</span>
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-lg rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                <DialogContent className=" max-w-lg rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                                     <DialogHeader>
-                                        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Create New User</DialogTitle>
+                                        <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Create New User</DialogTitle>
                                     </DialogHeader>
                                     <form onSubmit={handleCreateUser} className="space-y-5 mt-2">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -250,26 +240,6 @@ const Offices = ({ auth, users }: Props) => {
                                                 <InputError message={errors.position} />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor="role" className="text-gray-700 dark:text-gray-200">Role</Label>
-                                                <Select
-                                                    value={data.role}
-                                                    onValueChange={value => setData('role', value)}
-                                                >
-                                                    <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                                                        <SelectValue placeholder="Select role" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="receiver" disabled={hasReceiver}>
-                                                            Receiver {hasReceiver && "(Already exists)"}
-                                                        </SelectItem>
-                                                        <SelectItem value="user">User</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <InputError message={errors.role} />
-                                            </div>
-                                        </div>
                                         <div className="space-y-1.5">
                                             <Label htmlFor="email" className="text-gray-700 dark:text-gray-200">Email</Label>
                                             <Input
@@ -297,61 +267,38 @@ const Offices = ({ auth, users }: Props) => {
                         </div>
                     </div>
 
-                    {/* Department Stats Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8 border border-gray-200 dark:border-gray-700">
-                        <div className="p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                    <Users className="w-5 h-5 text-white" />
-                                </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Department Overview</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-500 rounded-lg flex items-center justify-center">
-                                            <Users className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
+                    {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className={`flex items-center gap-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-4 border border-gray-200 dark:border-gray-600`}>
+                                    <div className={`w-12 h-12 bg-gradient-to-br from-red-400 to-red-500 rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                        <Users className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="min-w-0 flex-1">
                                             <p className="text-sm font-semibold text-red-700 dark:text-red-400">Total Users</p>
                                             <p className="text-2xl font-bold text-red-900 dark:text-red-300">{users.length}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-500 rounded-lg flex items-center justify-center">
-                                            <User className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Regular Users</p>
-                                            <p className="text-2xl font-bold text-red-900 dark:text-red-300">{users.filter(user => user.role === 'user').length}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-500 rounded-lg flex items-center justify-center">
-                                            <UserPlus className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Receivers</p>
-                                            <p className="text-2xl font-bold text-red-900 dark:text-red-300">{users.filter(user => user.role === 'receiver').length}</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Users Table */}
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div className="p-8">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-                                    <Users className="w-5 h-5 text-white" />
+                            <div className="w-full flex items-center justify-between gap-3 mb-8">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
+                                        <Users className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h2 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Department Users</h2>
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Department Users</h2>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">Total Users:</p>
+                                    <p className="text-xl font-bold text-red-900 dark:text-red-300">{users.length}</p>
+                                </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <Table>
@@ -437,7 +384,7 @@ const Offices = ({ auth, users }: Props) => {
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogContent className="max-w-lg rounded-xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                             <DialogHeader>
-                                <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Edit User</DialogTitle>
+                                <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Edit User</DialogTitle>
                             </DialogHeader>
                             <form onSubmit={handleUpdateUser} className="space-y-5 mt-2">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -532,27 +479,6 @@ const Offices = ({ auth, users }: Props) => {
                                         className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                                     />
                                     <InputError message={errors.email} />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="edit_role" className="text-gray-700 dark:text-gray-200">Role</Label>
-                                    <Select
-                                        value={data.role}
-                                        onValueChange={value => setData('role', value)}
-                                    >
-                                        <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
-                                            <SelectValue placeholder="Select role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem
-                                                value="receiver"
-                                                disabled={hasReceiver && selectedUser?.role !== 'receiver'}
-                                            >
-                                                Receiver {hasReceiver && selectedUser?.role !== 'receiver' && "(Already exists)"}
-                                            </SelectItem>
-                                            <SelectItem value="user">User</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.role} />
                                 </div>
                                 <div className="flex justify-end gap-2 pt-2">
                                     <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">

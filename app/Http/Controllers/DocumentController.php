@@ -18,6 +18,7 @@ use App\Notifications\InAppNotification;
 use App\Models\UserActivityLog;
 use App\Models\DocumentActivityLog;
 use Illuminate\Notifications\DatabaseNotification;
+use App\Models\Department;
 
 class DocumentController extends Controller
 {
@@ -25,7 +26,21 @@ class DocumentController extends Controller
     public function forwardDocument(Request $request, Document $document)
     {
         $request->validate([
-            'forward_to_id' => 'required|exists:users,id',
+            'forward_type' => 'required|in:user,department',
+            'forward_to_id' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->forward_type === 'user') {
+                        if (!User::where('id', $value)->exists()) {
+                            $fail('The selected user is invalid.');
+                        }
+                    } elseif ($request->forward_type === 'department') {
+                        if (!Departments::where('id', $value)->exists()) {
+                            $fail('The selected department is invalid.');
+                        }
+                    }
+                }
+            ],
             'comments' => 'nullable|string|max:1000',
             'files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif', // 10MB max per file
         ]);
@@ -45,34 +60,42 @@ class DocumentController extends Controller
             ]);
         }
 
+        // set the document status to in_review
+        if ($document->status === 'approved') {
+            $document->update(['status' => 'approved']);
+        } else {
+            $document->update(['status' => 'in_review']);
+        }
+
         // find the id of the user who forwarded the document
         $forwardedById = Auth::id();
 
         // Get the final_recipient_id from existing recipient records
         $existingRecipient = DocumentRecipient::where('document_id', $document->id)
-            ->whereNotNull('final_recipient_id')
+            ->whereNotNull('final_recipient_department_id')
             ->first();
-        $finalRecipientId = $existingRecipient ? $existingRecipient->final_recipient_id : null;
+        $finalRecipientId = $existingRecipient ? $existingRecipient->final_recipient_department_id : null;
 
         // Determine the next sequence number
         $nextSequence = DocumentRecipient::where('document_id', $document->id)->max('sequence') + 1;
 
         DocumentRecipient::create([
             'document_id' => $document->id,
-            'user_id' => $request->forward_to_id,
+            'user_id' => $request->forward_type === 'user' ? $request->forward_to_id : null,
+            'department_id' => $request->forward_type === 'department' ? $request->forward_to_id : null,
             'forwarded_by' => $forwardedById,
             'status' => 'pending',
             'comments' => $request->comments,
             'sequence' => $nextSequence,
             'is_active' => true,
-            'is_final_approver' => User::find($request->forward_to_id)->role === 'admin' ? true : false,
-            'final_recipient_id' => $finalRecipientId,
-            'responded_at' => null
+            'final_recipient_department_id' => $finalRecipientId,
+            'responded_at' => null,
+            'received_at' => null
         ]);
 
         // Get the newly created recipient (the one just forwarded to)
         $newRecipient = DocumentRecipient::where('document_id', $document->id)
-            ->where('user_id', $request->forward_to_id)
+            ->where('department_id', $request->forward_to_id)
             ->where('sequence', $nextSequence)
             ->first();
 
@@ -101,22 +124,43 @@ class DocumentController extends Controller
             $document->update(['status' => 'received']);
         }
 
+        // check the forward_type and get the user or department
+        $forwardedTo = $request->forward_type === 'user' ? User::with(relations: 'department')->find($request->forward_to_id) : Departments::find($request->forward_to_id);
         // Notify the new recipient and document owner
-        $forwardedTo = User::find($request->forward_to_id);
-        if ($forwardedTo) {
-            $forwardedTo->notify(new InAppNotification('A document has been forwarded to you.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+        if ($request->forward_type === 'user' && $forwardedTo) {
+            $forwardedTo->notify(new InAppNotification("A {$document->document_type} document '{$document->subject}' has been forwarded to you by " . Auth::user()->first_name . ' ' . Auth::user()->last_name . ".", [
+                'document_id' => $document->id,
+                'document_name' => $document->subject
+            ]));
+        } elseif ($request->forward_type === 'department' && $forwardedTo) {
+            // Notify all users in the department
+            $departmentUsers = User::where('department_id', $forwardedTo->id)->get();
+            foreach ($departmentUsers as $user) {
+                $user->notify(new InAppNotification("A {$document->document_type} document '{$document->subject}' has been forwarded to your department by " . Auth::user()->first_name . ' ' . Auth::user()->last_name . ".", [
+                    'document_id' => $document->id,
+                    'document_name' => $document->subject
+                ]));
+            }
         }
-        $document->owner->notify(new InAppNotification('Your document has been forwarded.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+        $document->owner->notify(new InAppNotification("Your document '{$document->subject}' has been forwarded.", ['document_id' => $document->id, 'document_name' => $document->subject]));
 
         // After forwarding document
-        $forwardedTo = User::with('department')->find($request->forward_to_id);
-        $forwardedToName = $forwardedTo ? $forwardedTo->first_name . ' ' . $forwardedTo->last_name : 'Unknown User';
-        $forwardedToDept = $forwardedTo && $forwardedTo->department ? $forwardedTo->department->name : 'No Department';
+        if ($request->forward_type === 'user' && $forwardedTo) {
+            $forwardedToName = $forwardedTo->first_name . ' ' . $forwardedTo->last_name;
+            $forwardedToDept = $forwardedTo->department ? $forwardedTo->department->name : 'No Department';
+            $description = "Document forwarded to {$forwardedToName} ({$forwardedToDept})";
+        } elseif ($request->forward_type === 'department' && $forwardedTo) {
+            $forwardedToName = $forwardedTo->name;
+            $description = "Document forwarded to Department: {$forwardedToName}";
+        } else {
+            $description = "Document forwarded to Unknown recipient";
+        }
+
         DocumentActivityLog::create([
             'document_id' => $document->id,
             'user_id' => Auth::id(),
             'action' => 'forwarded',
-            'description' => "Document forwarded to {$forwardedToName} ({$forwardedToDept})",
+            'description' => $description,
             'created_at' => now(),
         ]);
 
@@ -129,15 +173,14 @@ class DocumentController extends Controller
             'status' => 'required|in:approved,rejected,returned',
             'comments' => 'nullable|string|max:1000',
             'attachment_files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif', // 10MB max per file
-            'is_final_approver' => 'boolean'
         ]);
 
         $recipient = DocumentRecipient::where('document_id', $document->id)
             ->where(function ($query) {
-                $query->where('user_id', Auth::id())
-                    ->orWhere('final_recipient_id', Auth::id());
+                $query->where('department_id', Auth::user()->department_id)
+                    ->orWhere('final_recipient_department_id', Auth::user()->department_id);
             })
-            ->whereIn('status', ['pending', 'forwarded'])
+            ->whereIn('status', ['pending', 'forwarded', 'received'])
             ->first();
 
         if (!$recipient && $request->status !== 'returned') {
@@ -156,21 +199,49 @@ class DocumentController extends Controller
             'is_active' => false,
         ]);
 
-        $isFinalApprover = $currentSequenceRecipient ? $currentSequenceRecipient->is_final_approver : false;
+        $isAdmin = Auth::user()->role === 'admin';
+        $userDepartmentId = Auth::user()->department_id;
 
-        // Create a new recipient record for the response
-        $newRecipient = DocumentRecipient::create([
+        $isFinalApprover = $currentSequenceRecipient && $currentSequenceRecipient->final_recipient_department_id === $userDepartmentId;
+
+        // Get the final_recipient_department_id from existing recipient records
+        $existingRecipient = DocumentRecipient::where('document_id', $document->id)
+            ->whereNotNull('final_recipient_department_id')
+            ->first();
+        $finalRecipientId = $existingRecipient ? $existingRecipient->final_recipient_department_id : null;
+
+        if ($request->status === 'returned') {
+
+            $documentOwnerDepartmentId = $document->owner->department_id;
+
+            $newRecipient = DocumentRecipient::create([
             'document_id' => $document->id,
-            'user_id' => Auth::id(),
-            'forwarded_by' => null,
+            'department_id' => $documentOwnerDepartmentId,
+            'final_recipient_department_id' => $finalRecipientId,
+            'forwarded_by' => Auth::id(),
             'status' => $request->status,
             'comments' => $request->comments,
             'responded_at' => now(),
             'is_active' => false,
             'sequence' => $currentSequence + 1,
-            'is_final_approver' => $recipient ? $recipient->is_final_approver : false,
-            'final_recipient_id' => $recipient ? $recipient->final_recipient_id : null,
+            ]);
+
+        } else {
+        // Create a new recipient record for the response
+        $newRecipient = DocumentRecipient::create([
+            'document_id' => $document->id,
+            'department_id' => Auth::user()->department_id,
+            'final_recipient_department_id' => $finalRecipientId,
+            'forwarded_by' => null,
+            'status' => $request->status,
+            'comments' => $request->comments,
+            'received_by' => ($request->status === 'approved' && $isFinalApprover) ? Auth::id() : null,
+            'responded_at' => now(),
+            'is_active' => false,
+            'sequence' => $currentSequence + 1,
         ]);
+        }
+
 
         // Handle multiple file uploads if present
         if ($request->hasFile('attachment_files')) {
@@ -188,76 +259,35 @@ class DocumentController extends Controller
             }
         }
 
-        // Update document status based on all recipients' responses
-        $allRecipients = DocumentRecipient::where('document_id', $document->id)->get();
-        $totalRecipients = $allRecipients->count();
-        $approvedCount = $allRecipients->where('status', 'approved')->count();
-        $rejectedCount = $allRecipients->where('status', 'rejected')->count();
-        $returnedCount = $allRecipients->where('status', 'returned')->count();
-        $pendingCount = $allRecipients->whereIn('status', ['pending', 'forwarded'])->count();
+        $user = Auth::user();
+        $dept = $user->department ? $user->department->name : 'No Department';
 
-        if ($rejectedCount > 0) {
-            $document->update(['status' => 'rejected']);
-            // Notify owner and recipients
-            $document->owner->notify(new InAppNotification('Your document was rejected.', ['document_id' => $document->id, 'document_name' => $document->subject]));
-            foreach ($allRecipients as $rec) {
-                $rec->user->notify(new InAppNotification('A document you are involved in was rejected.', ['document_id' => $document->id, 'document_name' => $document->subject]));
-            }
-        } elseif ($returnedCount > 0) {
-            $document->update(['status' => 'returned']);
-            $document->owner->notify(new InAppNotification('Your document was returned.', ['document_id' => $document->id, 'document_name' => $document->subject]));
-            foreach ($allRecipients as $rec) {
-                $rec->user->notify(new InAppNotification('A document you are involved in was returned.', ['document_id' => $document->id, 'document_name' => $document->subject]));
-            }
-        } elseif ($pendingCount === 0 && $approvedCount === $totalRecipients) {
-            $document->update(['status' => 'approved']);
-            $document->owner->notify(new InAppNotification('Your document was approved.', ['document_id' => $document->id, 'document_name' => $document->subject]));
-            foreach ($allRecipients as $rec) {
-                $rec->user->notify(new InAppNotification('A document you are involved in was approved.', ['document_id' => $document->id, 'document_name' => $document->subject]));
-            }
-        } elseif ($pendingCount > 0) {
-            $document->update(['status' => 'in_review']);
-        } else {
-            $document->update(['status' => 'in_review']);
-        }
+        // new document log
+        DocumentActivityLog::create([
+            'document_id' => $document->id,
+            'user_id' => Auth::id(),
+            'action' => $request->status,
+            'description' => "Document {$request->status} by {$user->first_name} {$user->last_name} ({$dept})",
+        ]);
 
         // If the final approver responds, update document status accordingly
-        if ($isFinalApprover && $request->status === 'approved') {
+        if ($isFinalApprover && $request->status === 'approved' && $isAdmin) {
             $document->update(['status' => 'approved']);
-            $document->owner->notify(new InAppNotification('Your document was approved by the final approver.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+            $document->owner->notify(new InAppNotification("Your document '{$document->subject}' was approved by the final approver.", ['document_id' => $document->id, 'document_name' => $document->subject]));
             $user = Auth::user();
             $dept = $user->department ? $user->department->name : 'No Department';
-            DocumentActivityLog::create([
-                'document_id' => $document->id,
-                'user_id' => Auth::id(),
-                'action' => 'approved',
-                'description' => "Document approved by {$user->first_name} {$user->last_name} ({$dept})",
-                'created_at' => now(),
-            ]);
-        } elseif ($isFinalApprover && $request->status === 'rejected') {
+
+        } elseif ($isFinalApprover && $request->status === 'rejected' && $isAdmin) {
             $document->update(['status' => 'rejected']);
-            $document->owner->notify(new InAppNotification('Your document was rejected by the final approver.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+            $document->owner->notify(new InAppNotification("Your document '{$document->subject}' was rejected by the final approver.", ['document_id' => $document->id, 'document_name' => $document->subject]));
             $user = Auth::user();
             $dept = $user->department ? $user->department->name : 'No Department';
-            DocumentActivityLog::create([
-                'document_id' => $document->id,
-                'user_id' => Auth::id(),
-                'action' => 'rejected',
-                'description' => "Document rejected by {$user->first_name} {$user->last_name} ({$dept})",
-                'created_at' => now(),
-            ]);
-        } elseif ($isFinalApprover && $request->status === 'returned') {
+
+        } elseif ($request->status === 'returned') {
             $document->update(['status' => 'returned']);
-            $document->owner->notify(new InAppNotification('Your document was returned by the final approver.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+            $document->owner->notify(new InAppNotification("Your document '{$document->subject}' was returned by the final approver.", ['document_id' => $document->id, 'document_name' => $document->subject]));
             $user = Auth::user();
             $dept = $user->department ? $user->department->name : 'No Department';
-            DocumentActivityLog::create([
-                'document_id' => $document->id,
-                'user_id' => Auth::id(),
-                'action' => 'returned',
-                'description' => "Document returned by {$user->first_name} {$user->last_name} ({$dept})",
-                'created_at' => now(),
-            ]);
         }
 
         return redirect()->back()->with('success', 'Response recorded successfully');
@@ -266,7 +296,7 @@ class DocumentController extends Controller
     public function getDocumentChain(Document $document)
     {
         $chain = DocumentRecipient::where('document_id', $document->id)
-            ->with(['user:id,name,email', 'forwardedBy:id,name,email'])
+            ->with(['department', 'forwardedBy:id,first_name,last_name,email'])
             ->orderBy('sequence')
             ->get();
 
@@ -279,11 +309,16 @@ class DocumentController extends Controller
     public function viewDocument(Document $document)
     {
         // Check if user has access to the document
-        if ($document->owner_id !== Auth::id() && !$document->recipients()->where('user_id', Auth::id())->exists()) {
+        // User can access if they are the owner OR if the document was sent to their department
+        $userDepartmentId = Auth::user()->department_id;
+        $hasAccess = $document->owner_id === Auth::id() ||
+                    $document->recipients()->where('department_id', $userDepartmentId)->exists();
+
+        if (!$hasAccess) {
             abort(403, 'Unauthorized access to document');
         }
 
-        $document->load(['files', 'owner.department', 'recipients.user', 'recipients.forwardedBy', 'recipients.finalRecipient']);
+        $document->load(['files', 'owner.department', 'recipients.department', 'recipients.forwardedBy', 'recipients.finalRecipient']);
 
         // Get users from the same department as the current user, excluding the current user
         $users = User::where('department_id', Auth::user()->department_id)
@@ -291,66 +326,77 @@ class DocumentController extends Controller
             ->with('department')
             ->get();
 
-        // Initialize throughUsers as empty collection
-        $throughUsers = collect();
-
-        // Ensure all users in through_user_ids are included
-        $throughUserIds = $document->through_user_ids ?? [];
-
-        if (!empty($throughUserIds)) {
-            $throughUsers = User::whereIn('id', $throughUserIds)->with('department')->get();
-            // Merge and remove duplicates by id
-            // $users = $users->merge($throughUsers)->unique('id')->values();
+        // throughDepartments: array of department objects (id, name) for through_department_ids
+        $throughDepartmentIds = $document->through_department_ids ?? [];
+        $throughDepartments = collect();
+        if (!empty($throughDepartmentIds)) {
+            $throughDepartments = Departments::whereIn('id', $throughDepartmentIds)->get(['id', 'name']);
         }
 
-        // Get users from other departments (excluding current user's department and current user and the document owner), prioritizing 'receiver' or 'admin' roles
+        // Get  other departments (excluding current user's department and current user and the document owner)
         $otherDepartments = Departments::where('id', '!=', Auth::user()->department_id)->get();
-        $otherOfficeUsers = collect();
-        foreach ($otherDepartments as $department) {
-            $receiver = $department->users()->where('role', 'receiver')->where('id', '!=', Auth::id())->where('id', '!=', $document->owner_id)->with('department')->first();
-            if ($receiver) {
-                $otherOfficeUsers->push($receiver);
-            } else {
-                $admin = $department->users()->where('role', 'admin')->where('id', '!=', Auth::id())->where('id', '!=', $document->owner_id)->with('department')->first();
-                if ($admin) {
-                    $otherOfficeUsers->push($admin);
-                }
-            }
-        }
 
         // Add is_final_approver to the document data
         $documentData = $document->toArray();
         $documentData['owner_id'] = $document->owner_id;
 
-        // Approval chain: recipients ordered by sequence, with user and forwardedBy
-        $approvalChain = $document->recipients()->with(['user.department', 'forwardedBy.department', 'finalRecipient.department'])->orderBy('sequence')->get()->map(function($recipient) {
+        // Approval chain: recipients ordered by sequence, with department and forwardedBy
+        $approvalChain = $document->recipients()->with(['user', 'department', 'forwardedBy.department', 'finalRecipient'])->orderBy('sequence')->get()->map(function($recipient) {
             return [
                 'id' => $recipient->id,
-                'user' => $recipient->user,
+                'user' => $recipient->user ? [
+                    'id' => $recipient->user->id,
+                    'first_name' => $recipient->user->first_name,
+                    'last_name' => $recipient->user->last_name,
+                    'role' => $recipient->user->role,
+                ] : null,
+                'department' => $recipient->department ? [
+                    'id' => $recipient->department->id,
+                    'name' => $recipient->department->name
+                ] : null,
                 'status' => $recipient->status,
                 'comments' => $recipient->comments,
                 'responded_at' => $recipient->responded_at,
                 'sequence' => $recipient->sequence,
-                'forwarded_by' => $recipient->forwardedBy,
-                'is_final_approver' => $recipient->is_final_approver,
-                'final_recipient' => $recipient->finalRecipient,
+                'forwarded_by' => $recipient->forwardedBy ? [
+                    'id' => $recipient->forwardedBy->id,
+                    'first_name' => $recipient->forwardedBy->first_name,
+                    'last_name' => $recipient->forwardedBy->last_name,
+                    'role' => $recipient->forwardedBy->role,
+                    'department' => $recipient->forwardedBy->department ? [
+                        'id' => $recipient->forwardedBy->department->id,
+                        'name' => $recipient->forwardedBy->department->name
+                    ] : null,
+                ] : null,
+                'received_by' => $recipient->receivedBy ? [
+                    'id' => $recipient->receivedBy->id,
+                    'first_name' => $recipient->receivedBy->first_name,
+                    'last_name' => $recipient->receivedBy->last_name,
+                    'role' => $recipient->receivedBy->role,
+                ] : null,
+                'final_recipient' => $recipient->finalRecipient ? [
+                    'id' => $recipient->finalRecipient->id,
+                    'name' => $recipient->finalRecipient->name
+                ] : null,
             ];
         });
         $documentData['approval_chain'] = $approvalChain;
 
         // Get the final recipient information from the first recipient record
-        $firstRecipient = $document->recipients()->with('finalRecipient.department')->first();
-        $documentData['final_recipient'] = $firstRecipient ? $firstRecipient->finalRecipient : null;
+        $firstRecipient = $document->recipients()->with('finalRecipient')->first();
+        $documentData['final_recipient'] = $firstRecipient && $firstRecipient->finalRecipient ? [
+            'id' => $firstRecipient->finalRecipient->id,
+            'name' => $firstRecipient->finalRecipient->name
+        ] : null;
 
         // Check if current user is a recipient and can respond, get the latest data
         $currentRecipient = $document->recipients()
-            ->where('user_id', Auth::id())
+            ->where('department_id', Auth::user()->department_id)
             ->orderByDesc('sequence')
             ->first();
 
-        $documentData['can_respond'] = $currentRecipient && in_array($currentRecipient->status, ['pending', 'forwarded', ]);
+        $documentData['can_respond'] = $currentRecipient && in_array($currentRecipient->status, ['pending', 'forwarded', 'received', 'approved']);
         $documentData['can_respond_other_data'] = $currentRecipient;
-        $documentData['is_final_approver'] = $currentRecipient ? $currentRecipient->is_final_approver : false;
         $documentData['recipient_status'] = $currentRecipient ? $currentRecipient->status : null;
 
         // Fetch document activity logs
@@ -364,8 +410,8 @@ class DocumentController extends Controller
                 'user' => Auth::user()
             ],
             'users' => $users,
-            'otherDepartmentUsers' => $otherOfficeUsers,
-            'throughUsers' => $throughUsers,
+            'otherDepartments' => $otherDepartments,
+            'throughUsers' => $throughDepartments,
             'activityLogs' => $activityLogs,
         ]);
     }
@@ -373,11 +419,16 @@ class DocumentController extends Controller
     public function markAsReceived(Document $document)
     {
         $documentRecipient = DocumentRecipient::where('document_id', $document->id)
-            ->where('user_id', Auth::id())
+            ->where('department_id', Auth::user()->department_id)
             ->orderByDesc('sequence')
             ->first();
-        $documentRecipient->update(['status' => 'received']);
-        $documentRecipient->update(['responded_at' => now()]);
+        if ($documentRecipient) {
+            $documentRecipient->update([
+                'status' => 'received',
+                'responded_at' => now(),
+                'received_at' => now()
+            ]);
+        }
 
         // Check if all recipients have received the document and if the document is for_info, then update the document status to received
         $allRecipients = DocumentRecipient::where('document_id', $document->id)->get();
@@ -410,11 +461,17 @@ class DocumentController extends Controller
         }
 
         // Check if user has access to the document
-        if ($document->owner_id !== Auth::id() && !$document->recipients()->where('user_id', Auth::id())->exists()) {
+        // User can access if they are the owner OR if the document was sent to their department (department-wide visibility)
+        $userDepartmentId = Auth::user()->department_id;
+        $hasAccess = $document->owner_id === Auth::id() ||
+                    $document->recipients()->where('department_id', $userDepartmentId)->exists();
+
+        if (!$hasAccess) {
             Log::warning('User not authorized for document', [
                 'user_id' => Auth::id(),
                 'document_owner_id' => $document->owner_id,
-                'is_recipient' => $document->recipients()->where('user_id', Auth::id())->exists()
+                'user_department_id' => $userDepartmentId,
+                'is_recipient' => $document->recipients()->where('department_id', $userDepartmentId)->exists()
             ]);
             abort(403, 'Unauthorized access to document');
         }
@@ -428,16 +485,22 @@ class DocumentController extends Controller
             abort(404, 'File not found');
         }
 
-        // Check if file exists in storage
-        if (!Storage::disk('public')->exists($file->file_path)) {
+        // Check if file exists in storage (remove 'public/' prefix if present)
+        $storagePath = $file->file_path;
+        if (str_starts_with($storagePath, 'public/')) {
+            $storagePath = substr($storagePath, 7); // Remove 'public/' prefix
+        }
+
+        if (!Storage::disk('public')->exists($storagePath)) {
             Log::warning('File not found in storage', [
-                'file_path' => $file->file_path
+                'file_path' => $file->file_path,
+                'storage_path' => $storagePath
             ]);
             abort(404, 'File not found in storage');
         }
 
         // Get the full path to the file
-        $path = Storage::disk('public')->path($file->file_path);
+        $path = Storage::disk('public')->path($storagePath);
 
         Log::info('File download successful', [
             'file_path' => $file->file_path,
@@ -480,7 +543,7 @@ class DocumentController extends Controller
         ]);
 
         // Notify the document owner
-        $document->owner->notify(new InAppNotification('Your document has been published publicly.', ['document_id' => $document->id, 'document_name' => $document->subject]));
+        $document->owner->notify(new InAppNotification("Your document '{$document->subject}' has been published publicly.", ['document_id' => $document->id, 'document_name' => $document->subject]));
 
         // Get user and department information for logging
         $user = Auth::user();
@@ -504,7 +567,7 @@ class DocumentController extends Controller
                   ->orWhere('barcode_value', $public_token);
         })
         ->where('is_public', true)
-        ->with(['files', 'owner', 'recipients.user.department'])
+        ->with(['files', 'owner.department', 'recipients.department', 'department'])
         ->first();
 
         if (!$document) {
@@ -528,7 +591,7 @@ class DocumentController extends Controller
         $search = request()->get('search');
 
         $query = Document::where('is_public', true)
-            ->with(['files', 'owner', 'recipients.user.department']);
+            ->with(['files', 'owner', 'recipients.department']);
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -536,6 +599,8 @@ class DocumentController extends Controller
                   ->orWhere('description', 'like', '%' . $search . '%')
                   ->orWhere('barcode_value', 'like', '%' . $search . '%')
                   ->orWhere('public_token', 'like', '%' . $search . '%')
+                  ->orWhere('order_number', 'like', '%' . $search . '%')
+                  ->orWhere('document_type', 'like', '%' . $search . '%')
                   ->orWhereHas('owner', function($ownerQuery) use ($search) {
                       $ownerQuery->where('first_name', 'like', '%' . $search . '%')
                                 ->orWhere('last_name', 'like', '%' . $search . '%');
@@ -552,6 +617,7 @@ class DocumentController extends Controller
                     'subject' => $document->subject,
                     'description' => $document->description,
                     'status' => $document->status,
+                    'document_type' => $document->document_type,
                     'is_public' => $document->is_public,
                     'public_token' => $document->public_token,
                     'barcode_path' => $document->barcode_path,
@@ -589,10 +655,19 @@ class DocumentController extends Controller
         }
 
         // Delete notifications related to this document
-        // Get all users involved with this document (owner and recipients)
-        $involvedUserIds = collect([$document->owner_id])
-            ->merge($document->recipients->pluck('user_id'))
-            ->unique();
+        // Get all users involved with this document (owner and department admins)
+        $involvedUserIds = collect([$document->owner_id]);
+
+        // Add department admins for all recipient departments
+        $recipientDepartmentIds = $document->recipients->pluck('department_id')->unique();
+        foreach ($recipientDepartmentIds as $deptId) {
+            $deptAdmin = User::where('department_id', $deptId)->where('role', 'admin')->first();
+            if ($deptAdmin) {
+                $involvedUserIds->push($deptAdmin->id);
+            }
+        }
+
+        $involvedUserIds = $involvedUserIds->unique();
 
                 // Delete notifications for all involved users that reference this document
         foreach ($involvedUserIds as $userId) {

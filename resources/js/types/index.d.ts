@@ -28,6 +28,7 @@ export interface SharedData {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    csrf_token: string;
     [key: string]: unknown;
 }
 
@@ -50,7 +51,7 @@ export interface User {
     [key: string]: unknown; // This allows for additional properties...
 }
 
-export interface Admin {
+export interface User {
     id: number;
     first_name: string;
     last_name: string;
@@ -63,6 +64,7 @@ export interface Admin {
     is_active: boolean;
     created_at: string;
     avatar: string | null;
+    role: string;
 }
 
 export interface Departments {
@@ -71,6 +73,7 @@ export interface Departments {
     code: string;
     description: string | null;
     type: 'office' | 'college';
+    is_presidential: boolean;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;

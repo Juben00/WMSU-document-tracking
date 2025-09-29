@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,9 +28,12 @@ class FirstTimePasswordController extends Controller
         ]);
 
         $user = Auth::user();
-        $user->password = Hash::make($validated['password']);
-        $user->markPasswordAsChanged();
-        $user->save();
+
+        $user->update([
+            'password' => $validated['password'],
+            'password_changed_at' => now(),
+            'email_verified_at' => now(),
+        ]);
 
         return redirect()->route('dashboard')->with('success', 'Password changed successfully. Welcome to the system!');
     }

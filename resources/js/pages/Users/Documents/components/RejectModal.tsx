@@ -21,7 +21,6 @@ interface FormData {
     comments: string;
     attachment_files: File[];
     forward_to_id: number | null;
-    is_final_approver: boolean;
     [key: string]: any;
 }
 
@@ -50,7 +49,6 @@ const RejectModal: React.FC<RejectModalProps> = ({ isOpen, onClose, documentId }
         comments: '',
         attachment_files: [],
         forward_to_id: null,
-        is_final_approver: auth.user.role === 'admin' ? true : false
     });
 
     // Update form data whenever state changes
@@ -60,7 +58,6 @@ const RejectModal: React.FC<RejectModalProps> = ({ isOpen, onClose, documentId }
             comments: comments,
             attachment_files: files.map(f => f.file),
             forward_to_id: null,
-            is_final_approver: auth.user.role === 'admin'
         });
     }, [comments, files, setData, auth.user.role]);
 
@@ -110,32 +107,47 @@ const RejectModal: React.FC<RejectModalProps> = ({ isOpen, onClose, documentId }
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        post(route('documents.respond', documentId), {
-            preserveScroll: true,
-            forceFormData: true,
-            onSuccess: () => {
-                onClose();
-                reset();
-                setComments('');
-                // Clean up preview URLs
-                files.forEach(fileWithPreview => {
-                    if (fileWithPreview.preview) {
-                        URL.revokeObjectURL(fileWithPreview.preview);
+        // Prevent multiple submissions
+        if (processing) {
+            return;
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to reject this document?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#16a34a',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                post(route('documents.respond', documentId), {
+                    preserveScroll: true,
+                    forceFormData: true,
+                    onSuccess: () => {
+                        onClose();
+                        reset();
+                        setComments('');
+                        // Clean up preview URLs
+                        files.forEach(fileWithPreview => {
+                            if (fileWithPreview.preview) {
+                                URL.revokeObjectURL(fileWithPreview.preview);
+                            }
+                        });
+                        setFiles([]);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Document rejected successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    },
+                    onError: (errors: any) => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errors.message || 'An error occurred while rejecting the document',
+                        });
                     }
-                });
-                setFiles([]);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Document rejected successfully',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            },
-            onError: (errors: any) => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: errors.message || 'An error occurred while rejecting the document',
                 });
             }
         });

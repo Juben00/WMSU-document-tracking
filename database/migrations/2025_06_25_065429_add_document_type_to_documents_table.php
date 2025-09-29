@@ -13,7 +13,26 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->enum('document_type', ['special_order', 'order', 'memorandum', 'for_info'])->default('memorandum')->after('subject');
+            $table->enum('document_type', [
+                'special_order',
+                'order',
+                'memorandum',
+                'for_info',
+                'letters',
+                'email',
+                'travel_order',
+                'city_resolution',
+                'invitations',
+                'vouchers',
+                'diploma',
+                'checks',
+                'job_orders',
+                'contract_of_service',
+                'pr',
+                'appointment',
+                'purchase_order',
+                'other'
+            ])->default('memorandum')->after('subject');
         });
 
         // Update existing documents to have a default document type

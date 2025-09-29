@@ -4,7 +4,6 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import { LoaderCircle } from 'lucide-react';
 
-import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -39,9 +38,9 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
         last_name: auth.user.last_name,
         middle_name: auth.user.middle_name || '',
         suffix: auth.user.suffix || '',
-        gender: auth.user.gender,
-        position: auth.user.position,
-        department: auth.user.department,
+        gender: auth.user.gender || '',
+        position: auth.user.position || '',
+        department: auth.user.department?.name || '',
         email: auth.user.email,
     });
 
@@ -220,7 +219,6 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                     </form>
                 </div>
 
-                <DeleteUser />
             </SettingsLayout>
         </AppLayout>
     );

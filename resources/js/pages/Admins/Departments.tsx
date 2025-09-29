@@ -1,22 +1,21 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import { Plus, Trash2, Pencil, Eye } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, Users, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import EditDepartment from '@/components/Departments/EditDepartment';
 import type { Departments } from '@/types';
 import AddDepartment from '@/components/Departments/AddDepartment';
 import Swal from 'sweetalert2';
+import Spinner from '@/components/spinner';
+import { Input } from '@/components/ui/input';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,6 +38,15 @@ export default function Departments({ departments, auth }: Props) {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Departments | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [filter, setFilter] = useState('');
+
+    const { processing, delete: destroy, data, setData, post, errors, reset, put } = useForm({
+        name: '',
+        code: '',
+        description: '',
+        type: '',
+        is_presidential: false as boolean,
+    });
 
     const handleDeleteOffice = (department: Departments) => {
         Swal.fire({
@@ -51,12 +59,11 @@ export default function Departments({ departments, auth }: Props) {
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                router.delete(route('departments.destroy', department.id), {
+                destroy(route('departments.destroy', department.id), {
                     onSuccess: () => {
                         toast.success('Department deleted successfully');
-                        router.reload({ only: ['departments'] });
                     },
-                    onError: (errors) => {
+                    onError: (errors: any) => {
                         console.error('Delete error:', errors);
                         if (errors.department) {
                             toast.error(errors.department);
@@ -76,14 +83,21 @@ export default function Departments({ departments, auth }: Props) {
 
     const handleEditOffice = (department: Departments) => {
         setSelectedOffice(department);
+        // Initialize form data with the selected department's data
+        setData('name', department.name || '');
+        setData('code', department.code || '');
+        setData('description', department.description || '');
+        setData('type', department.type as 'office' | 'college'); // Assert type
+        setData('is_presidential', department.is_presidential || false);
         setIsEditDialogOpen(true);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+            {processing && <Spinner />}
             <Head title="Departments Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
-                <div className="flex justify-between items-center">
+                <div className="flex gap-6 overflow-auto items-center w-full">
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">Departments Management</h1>
@@ -92,6 +106,13 @@ export default function Departments({ departments, auth }: Props) {
                             </p>
                         </div>
                     </div>
+
+                    {/* filter section */}
+                    <div className="flex items-center gap-2 flex-1">
+                        <p className="text-sm font-semibold dark:text-white">Search:</p>
+                        <Input type="text" placeholder="Search Department" onChange={(e) => setFilter(e.target.value)} value={filter} />
+                    </div>
+
                     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                         <DialogTrigger asChild>
                             <Button>
@@ -103,7 +124,7 @@ export default function Departments({ departments, auth }: Props) {
                             <DialogHeader>
                                 <DialogTitle>Create New Department</DialogTitle>
                             </DialogHeader>
-                            <AddDepartment setIsCreateDialogOpen={setIsCreateDialogOpen} />
+                            <AddDepartment setIsCreateDialogOpen={setIsCreateDialogOpen} processing={processing} post={post} setData={setData} data={data} errors={errors} reset={reset} />
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -116,17 +137,24 @@ export default function Departments({ departments, auth }: Props) {
                                 <TableHead>Code</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Type</TableHead>
+                                <TableHead>Is Presidential</TableHead>
                                 <TableHead>Created At</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {departments.map((department) => (
+                            {departments.filter((department) =>
+                                department.name.toLowerCase().includes(filter.toLowerCase()) ||
+                                department.code.toLowerCase().includes(filter.toLowerCase()) ||
+                                department.description?.toLowerCase().includes(filter.toLowerCase()) ||
+                                department.type.toLowerCase().includes(filter.toLowerCase())
+                            ).map((department) => (
                                 <TableRow key={department.id}>
                                     <TableCell>{department.name}</TableCell>
                                     <TableCell>{department.code}</TableCell>
                                     <TableCell>{department.description}</TableCell>
                                     <TableCell>{department.type}</TableCell>
+                                    <TableCell>{department.is_presidential ? 'Yes' : 'No'}</TableCell>
                                     <TableCell>{format(new Date(department.created_at), 'MMM d, yyyy')}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
@@ -205,6 +233,12 @@ export default function Departments({ departments, auth }: Props) {
                             <EditDepartment
                                 department={selectedOffice}
                                 setIsEditDialogOpen={setIsEditDialogOpen}
+                                processing={processing}
+                                put={put}
+                                setData={setData}
+                                data={data}
+                                errors={errors}
+                                reset={reset}
                             />
                         )}
                     </DialogContent>

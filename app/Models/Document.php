@@ -17,12 +17,15 @@ class Document extends Model
     protected $fillable = [
         'owner_id',
         'department_id',
+        'request_from',
+        'request_from_department',
+        'signatory',
         'subject',
         'order_number',
         'document_type',
         'status',
         'description',
-        'through_user_ids',
+        'through_department_ids',
         'is_public',
         'public_token',
         'barcode_path',
@@ -31,7 +34,7 @@ class Document extends Model
 
     protected $casts = [
         'is_public' => 'boolean',
-        'through_user_ids' => 'array',
+        'through_department_ids' => 'array',
     ];
 
     public function owner(): BelongsTo
@@ -64,6 +67,20 @@ class Document extends Model
             'order' => 'Order',
             'memorandum' => 'Memorandum',
             'for_info' => 'For Info',
+            'letters' => 'Letters',
+            'email' => 'Email',
+            'travel_order' => 'Travel Order',
+            'city_resolution' => 'City Resolution',
+            'invitations' => 'Invitations',
+            'vouchers' => 'Vouchers',
+            'diploma' => 'Diploma',
+            'checks' => 'Checks',
+            'job_orders' => 'Job Orders',
+            'contract_of_service' => 'Contract of Service',
+            'pr' => 'PR',
+            'appointment' => 'Appointment',
+            'purchase_order' => 'Purchase Order',
+            'other' => 'Other',
             default => 'Unknown'
         };
     }
@@ -78,6 +95,20 @@ class Document extends Model
             'order' => 'Order',
             'memorandum' => 'Memorandum',
             'for_info' => 'For Info',
+            'letters' => 'Letters',
+            'email' => 'Email',
+            'travel_order' => 'Travel Order',
+            'city_resolution' => 'City Resolution',
+            'invitations' => 'Invitations',
+            'vouchers' => 'Vouchers',
+            'diploma' => 'Diploma',
+            'checks' => 'Checks',
+            'job_orders' => 'Job Orders',
+            'contract_of_service' => 'Contract of Service',
+            'pr' => 'PR',
+            'appointment' => 'Appointment',
+            'purchase_order' => 'Purchase Order',
+            'other' => 'Other',
         ];
     }
 }

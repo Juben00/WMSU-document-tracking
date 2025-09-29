@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
@@ -21,12 +22,11 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'require_password_change'])->group(function () {
     Route::get('dashboard', function () {
-        if (Auth::user()->role === 'superadmin') {
-            return app(AdminController::class)->dashboard();
-        } else {
-            return Inertia::render('Users/Dashboard');
-        }
+    return Auth::user()->role === 'superadmin'
+        ? app(AdminController::class)->dashboard()
+        : Inertia::render('Users/Dashboard');
     })->name('dashboard');
+
 
     // First-time password change routes
     Route::get('/password/change', [FirstTimePasswordController::class, 'show'])->name('password.change');
@@ -79,6 +79,33 @@ Route::middleware(['auth', 'verified', 'require_password_change'])->group(functi
 
     // send document to recipients
     Route::post('/users/documents/send', [UserController::class, 'sendDocument'])->name('users.documents.send');
+
+    // Confirm document receipt via barcode
+    Route::post('/users/documents/confirm-receive', [UserController::class, 'confirmReceive'])->name('users.documents.confirm-receive');
+
+    // Generate auto order number
+    Route::post('/users/documents/generate-order-number', [UserController::class, 'generateOrderNumber'])->name('users.documents.generate-order-number');
+
+    // Test CSRF token endpoint
+    Route::post('/users/test-csrf', [UserController::class, 'testCsrf'])->name('users.test-csrf');
+
+    // Refresh CSRF token endpoint
+    Route::get('/users/refresh-csrf', [UserController::class, 'refreshCsrf'])->name('users.refresh-csrf');
+
+    // Test CSRF token regeneration endpoint
+    Route::post('/users/test-csrf-regeneration', function (Request $request) {
+        $oldToken = $request->header('X-CSRF-TOKEN');
+        $request->session()->regenerateToken();
+        $newToken = csrf_token();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'CSRF token regenerated successfully',
+            'old_token' => $oldToken,
+            'new_token' => $newToken,
+            'tokens_different' => $oldToken !== $newToken
+        ]);
+    })->name('users.test-csrf-regeneration');
 
     Route::get('/users/documents/{document}/edit', [UserController::class, 'editDocument'])->name('users.documents.edit');
     Route::put('/users/documents/{document}', [UserController::class, 'updateDocument'])->name('users.documents.update');

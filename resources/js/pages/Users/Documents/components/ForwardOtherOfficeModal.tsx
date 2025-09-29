@@ -8,23 +8,18 @@ import { Label } from "@/components/ui/label";
 import { X, FileText, Image as ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 
-interface User {
+interface Department {
     id: number;
-    first_name: string;
-    last_name: string;
-    role: string;
-    department?: {
-        id: number;
-        name: string;
-    };
+    name: string;
 }
 
 interface ForwardModalProps {
     isOpen: boolean;
     onClose: () => void;
     processing: boolean;
-    users: User[];
+    departments: Department[];
     documentId: number;
 }
 
@@ -45,7 +40,7 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
     isOpen,
     onClose,
     processing,
-    users,
+    departments,
     documentId
 }) => {
     const [selectedUser, setSelectedUser] = useState<string>('');
@@ -54,6 +49,7 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { post, processing: isProcessing, setData, reset } = useForm<FormData>({
+        forward_type: 'department',
         forward_to_id: '',
         comments: '',
         files: []
@@ -62,6 +58,7 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
     // Update form data whenever state changes
     useEffect(() => {
         setData({
+            forward_type: 'department',
             forward_to_id: selectedUser,
             comments: comments,
             files: files.map(f => f.file)
@@ -128,9 +125,6 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
             return;
         }
 
-        // Set submitting state to prevent multiple clicks
-        setIsSubmitting(true);
-
         post(route('documents.forward', documentId), {
             preserveScroll: true,
             forceFormData: true,
@@ -153,24 +147,16 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
                     text: 'Document forwarded successfully',
                     timer: 2000,
                     showConfirmButton: false
+                }).then(() => {
+                    router.visit(route('users.documents')); // refresh the page
                 });
             },
             onError: (errors: any) => {
                 setIsSubmitting(false);
-                let errorMessage = 'An error occurred while forwarding the document';
-
-                if (errors.message) {
-                    errorMessage = errors.message;
-                } else if (errors.forward_to_id) {
-                    errorMessage = errors.forward_to_id;
-                } else if (errors.files) {
-                    errorMessage = errors.files;
-                }
-
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: errorMessage
+                    text: 'An error occurred while forwarding the document'
                 });
             }
         });
@@ -220,12 +206,13 @@ const ForwardOtherOfficeModal: React.FC<ForwardModalProps> = ({
                             <SelectTrigger className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
                                 <SelectValue placeholder="Select a recipient" className="dark:text-gray-400" />
                             </SelectTrigger>
+
                             <SelectContent className="dark:bg-gray-800 dark:border-gray-600">
-                                {users.length > 0 ? users.map((user) => (
-                                    <SelectItem key={user.id} value={user.id.toString()} className="dark:text-gray-100 dark:hover:bg-gray-700">
-                                        <span className="truncate max-w-[320px] block">{user.first_name} {user.last_name} | {user.department?.name || 'No Department'} | {user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
+                                {departments.length > 0 ? departments.map((department) => (
+                                    <SelectItem key={department.id} value={department.id.toString()} className="dark:text-gray-100 dark:hover:bg-gray-700">
+                                        <span className="truncate max-w-[400px] block">{department.name}</span>
                                     </SelectItem>
-                                )) : <SelectItem value="no-users" className="dark:text-gray-100 dark:hover:bg-gray-700">No users found</SelectItem>}
+                                )) : <SelectItem value="no-departments" className="dark:text-gray-100 dark:hover:bg-gray-700">No departments found</SelectItem>}
                             </SelectContent>
                         </Select>
                     </div>

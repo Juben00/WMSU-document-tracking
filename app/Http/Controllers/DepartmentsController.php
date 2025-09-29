@@ -9,6 +9,7 @@ use Inertia\Inertia;
 use App\Notifications\InAppNotification;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use App\Models\UserActivityLog;
 
 class DepartmentsController extends Controller
 {
@@ -41,6 +42,7 @@ class DepartmentsController extends Controller
             'code' => 'required|string|max:255|unique:departments',
             'description' => 'nullable|string|max:1000',
             'type' => 'required|string|in:office,college',
+            'is_presidential' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -49,10 +51,18 @@ class DepartmentsController extends Controller
                 ->withInput();
         }
 
+        // check if there is a presidential department
+        $presidentialDepartment = Departments::where('is_presidential', true)->first();
+        if ($presidentialDepartment && $request->is_presidential) {
+            return redirect()->back()
+                ->withErrors(['is_presidential' => 'There can only be one presidential department.'])
+                ->withInput();
+        }
+
         Departments::create($request->all());
 
         // Log department creation
-        \App\Models\UserActivityLog::create([
+        UserActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'department_created',
             'description' => 'Created department: ' . $request->name,
@@ -95,6 +105,7 @@ class DepartmentsController extends Controller
             'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
             'code' => 'required|string|max:255|unique:departments,code,' . $department->id,
             'description' => 'nullable|string|max:1000',
+            'is_presidential' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -103,10 +114,18 @@ class DepartmentsController extends Controller
                 ->withInput();
         }
 
+        // check if there is a presidential department
+        $presidentialDepartment = Departments::where('is_presidential', true)->first();
+        if ($presidentialDepartment && $request->is_presidential) {
+            return redirect()->back()
+                ->withErrors(['is_presidential' => 'There can only be one presidential department.'])
+                ->withInput();
+        }
+
         $department->update($request->all());
 
         // Log department update
-        \App\Models\UserActivityLog::create([
+        UserActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'department_updated',
             'description' => 'Updated department: ' . $department->name,
@@ -141,7 +160,7 @@ class DepartmentsController extends Controller
             $department->delete();
 
             // Log department deletion
-            \App\Models\UserActivityLog::create([
+            UserActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'department_deleted',
                 'description' => 'Deleted department: ' . $department->name,

@@ -8,33 +8,40 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DocumentRecipient extends Model
 {
     protected $fillable = [
-        'document_id',
         'user_id',
-        'final_recipient_id',
+        'document_id',
+        'department_id',
+        'final_recipient_department_id',
         'status',
         'comments',
         'responded_at',
+        'received_at',
         'sequence',
         'forwarded_by',
         'forwarded_to',
         'is_active',
-        'is_final_approver'
+        'received_by', // Added to allow mass assignment
     ];
 
     protected $casts = [
         'responded_at' => 'datetime',
+        'received_at' => 'datetime',
         'is_active' => 'boolean',
-        'is_final_approver' => 'boolean'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
     }
 
-    public function user(): BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Departments::class, 'department_id');
     }
 
     public function forwardedBy(): BelongsTo
@@ -47,8 +54,13 @@ class DocumentRecipient extends Model
         return $this->belongsTo(User::class, 'forwarded_to');
     }
 
+    public function receivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'received_by');
+    }
+
     public function finalRecipient(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'final_recipient_id');
+        return $this->belongsTo(Departments::class, 'final_recipient_department_id');
     }
 }
