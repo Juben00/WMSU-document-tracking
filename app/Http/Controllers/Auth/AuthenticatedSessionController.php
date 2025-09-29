@@ -31,7 +31,6 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
         // Log user login activity
@@ -43,8 +42,14 @@ class AuthenticatedSessionController extends Controller
             'created_at' => now(),
         ]);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // ✅ Redirect based on role
+        if (strtolower(Auth::user()->role) === 'superadmin') {
+            return redirect()->route('admin.analytics'); // or dashboard for superadmin
+        }
+
+        return redirect()->route('dashboard'); // normal user
     }
+
 
     /**
      * Destroy an authenticated session.

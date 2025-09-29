@@ -22,12 +22,11 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'require_password_change'])->group(function () {
     Route::get('dashboard', function () {
-        if (Auth::user()->role === 'superadmin') {
-            return app(AdminController::class)->dashboard();
-        } else {
-            return Inertia::render('Users/Dashboard');
-        }
+    return Auth::user()->role === 'superadmin'
+        ? app(AdminController::class)->dashboard()
+        : Inertia::render('Users/Dashboard');
     })->name('dashboard');
+
 
     // First-time password change routes
     Route::get('/password/change', [FirstTimePasswordController::class, 'show'])->name('password.change');
