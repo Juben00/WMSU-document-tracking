@@ -49,7 +49,7 @@ interface Props {
 
 export default function Admins({ users, departments, auth, departmentsForUserCreation }: Props) {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
+    const [selectedUserType, setSelectedUserType] = useState<'admin' | 'user'>('admin');
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -152,50 +152,57 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                         <Input type="text" placeholder="Search User" onChange={(e) => setFilter(e.target.value)} value={filter} />
                     </div>
                     <div className="flex items-center gap-2">
-                        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) { reset(); setSelectedUserType('admin'); setData('role', 'admin'); } }}>
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Create Admin
+                                    Create
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Create New Admin</DialogTitle>
+                                    <DialogTitle>Create New {selectedUserType === 'admin' ? 'Admin' : 'User'}</DialogTitle>
                                 </DialogHeader>
-                                <AddNewAdmin
-                                    setIsCreateDialogOpen={setIsCreateDialogOpen}
-                                    departments={departments}
-                                    processing={processing}
-                                    post={post}
-                                    setData={setData}
-                                    data={data}
-                                    errors={errors}
-                                    reset={reset}
-                                />
-                            </DialogContent>
-                        </Dialog>
-                        <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="outline">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create User
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Create New User</DialogTitle>
-                                </DialogHeader>
-                                <AddNewUser
-                                    setIsCreateDialogOpen={setIsCreateUserDialogOpen}
-                                    departments={departmentsForUserCreation}
-                                    processing={processing}
-                                    post={post}
-                                    setData={setData}
-                                    data={data}
-                                    errors={errors}
-                                    reset={reset}
-                                />
+                                <div className="">
+                                    <Label htmlFor="user_type">User Type</Label>
+                                    <div className="mt-2 flex gap-2">
+                                        <Button
+                                            variant={selectedUserType === 'admin' ? 'default' : 'outline'}
+                                            onClick={() => { setSelectedUserType('admin'); setData('role', 'admin'); }}
+                                        >
+                                            Admin
+                                        </Button>
+                                        <Button
+                                            variant={selectedUserType === 'user' ? 'default' : 'outline'}
+                                            onClick={() => { setSelectedUserType('user'); setData('role', 'user'); }}
+                                        >
+                                            User
+                                        </Button>
+                                    </div>
+                                </div>
+                                {selectedUserType === 'admin' ? (
+                                    <AddNewAdmin
+                                        setIsCreateDialogOpen={setIsCreateDialogOpen}
+                                        departments={departments}
+                                        processing={processing}
+                                        post={post}
+                                        setData={setData}
+                                        data={data}
+                                        errors={errors}
+                                        reset={reset}
+                                    />
+                                ) : (
+                                    <AddNewUser
+                                        setIsCreateDialogOpen={setIsCreateDialogOpen}
+                                        departments={departmentsForUserCreation}
+                                        processing={processing}
+                                        post={post}
+                                        setData={setData}
+                                        data={data}
+                                        errors={errors}
+                                        reset={reset}
+                                    />
+                                )}
                             </DialogContent>
                         </Dialog>
                     </div>

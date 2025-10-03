@@ -30,7 +30,9 @@ class UserActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $logs = $query->orderBy('created_at', 'asc')->paginate(20);
+        // Sorting
+        $sortDir = strtolower($request->get('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $logs = $query->orderBy('created_at', $sortDir)->paginate(20);
 
         $users = User::select('id', 'first_name', 'last_name', 'email')->get();
 
@@ -41,6 +43,7 @@ class UserActivityLogController extends Controller
                 'action' => $request->action,
                 'date_from' => $request->date_from,
                 'date_to' => $request->date_to,
+                'sort_dir' => $sortDir,
             ],
             'users' => $users,
         ]);

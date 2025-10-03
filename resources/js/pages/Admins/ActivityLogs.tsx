@@ -50,6 +50,7 @@ interface Props {
         action: string;
         date_from: string;
         date_to: string;
+        sort_dir?: 'asc' | 'desc';
     };
     users: User[];
 }
@@ -75,6 +76,7 @@ export default function ActivityLogs({ logs, filters, users }: Props) {
         action: filters.action || '',
         date_from: filters.date_from || '',
         date_to: filters.date_to || '',
+        sort_dir: (filters.sort_dir as 'asc' | 'desc') || 'desc',
     });
 
     const handleFilterChange = (name: string, value: string) => {
@@ -124,7 +126,7 @@ export default function ActivityLogs({ logs, filters, users }: Props) {
 
                 {/* Filters */}
                 <Card className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="user_id">User</Label>
                             <Select
@@ -183,6 +185,22 @@ export default function ActivityLogs({ logs, filters, users }: Props) {
                                 value={localFilters.date_to}
                                 onChange={(e) => handleFilterChange('date_to', e.target.value)}
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="sort_dir">Sort</Label>
+                            <Select
+                                value={localFilters.sort_dir || 'desc'}
+                                onValueChange={(value) => handleFilterChange('sort_dir', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sort Direction" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="desc">Newest First</SelectItem>
+                                    <SelectItem value="asc">Oldest First</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </Card>

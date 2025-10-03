@@ -118,7 +118,7 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
             // Try to get WMSU logo as base64
             let logoImageData: string | null = null;
             try {
-                const logoPath = `${window.location.origin}/storage/images/wmsu_logo.png`;
+                const logoPath = `${window.location.origin}/images/wmsu_logo.png`;
                 logoImageData = await imageToBase64(logoPath);
                 console.log('Successfully converted logo to base64');
             } catch (logoError) {
