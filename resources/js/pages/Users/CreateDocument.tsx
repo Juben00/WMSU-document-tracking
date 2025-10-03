@@ -1009,7 +1009,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                     {/* Recipients Section */}
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
-                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-blue-100 dark:border-blue-800/30">
+                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-red-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <Users className="w-6 h-6 text-white" />
@@ -1095,7 +1095,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                     {/* Files Section */}
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
-                        <div className="bg-gradient-to-r from-red-50 to-emerald-50 dark:from-red-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
+                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-red-900/20 dark:to-red-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <Upload className="w-6 h-6 text-white" />
