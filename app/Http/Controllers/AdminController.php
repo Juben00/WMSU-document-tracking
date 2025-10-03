@@ -55,10 +55,10 @@ class AdminController extends Controller
         // $randomPassword = Str::random(12);
 
         $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'middle_name' => $request->middle_name,
-            'suffix' => $request->suffix,
+            'first_name' => Str::title(trim($request->first_name)),
+            'last_name' => Str::title(trim($request->last_name)),
+            'middle_name' => $request->filled('middle_name') ? Str::title(trim($request->middle_name)) : null,
+            'suffix' => $request->filled('suffix') ? Str::title(trim($request->suffix)) : null,
             'gender' => $request->gender,
             'position' => $request->position,
             'department_id' => $request->department_id,
@@ -111,6 +111,14 @@ class AdminController extends Controller
         ]);
 
         $data = $request->all();
+        $data['first_name'] = Str::title(trim($data['first_name']));
+        $data['last_name'] = Str::title(trim($data['last_name']));
+        if (isset($data['middle_name']) && $data['middle_name'] !== null) {
+            $data['middle_name'] = Str::title(trim($data['middle_name']));
+        }
+        if (isset($data['suffix']) && $data['suffix'] !== null) {
+            $data['suffix'] = Str::title(trim($data['suffix']));
+        }
 
         $admin->update($data);
 

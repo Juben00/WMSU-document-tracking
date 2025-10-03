@@ -64,10 +64,10 @@ class UserController extends Controller
         $randomPassword = Str::random(12);
 
         $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'middle_name' => $request->middle_name,
-            'suffix' => $request->suffix,
+            'first_name' => Str::title(trim($request->first_name)),
+            'last_name' => Str::title(trim($request->last_name)),
+            'middle_name' => $request->filled('middle_name') ? Str::title(trim($request->middle_name)) : null,
+            'suffix' => $request->filled('suffix') ? Str::title(trim($request->suffix)) : null,
             'gender' => $request->gender,
             'position' => $request->position,
             'department_id' => Auth::user()->department_id,
@@ -244,7 +244,18 @@ class UserController extends Controller
         ]);
 
         $user = User::find(Auth::id());
-        $user->fill($validated);
+        // Normalize capitalization on name fields
+        $user->first_name = Str::title(trim($validated['first_name']));
+        $user->last_name = Str::title(trim($validated['last_name']));
+        $user->middle_name = isset($validated['middle_name']) && $validated['middle_name'] !== null
+            ? Str::title(trim($validated['middle_name']))
+            : null;
+        $user->suffix = isset($validated['suffix']) && $validated['suffix'] !== null
+            ? Str::title(trim($validated['suffix']))
+            : null;
+        $user->position = $validated['position'];
+        $user->gender = $validated['gender'];
+        $user->email = $validated['email'];
         $user->save();
 
         // Log user update
