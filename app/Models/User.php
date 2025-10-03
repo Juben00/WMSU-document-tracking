@@ -27,7 +27,6 @@ class User extends Authenticatable
         'position',
         'department_id',
         'role',
-        'avatar',
         'email',
         'password',
         'password_changed_at',

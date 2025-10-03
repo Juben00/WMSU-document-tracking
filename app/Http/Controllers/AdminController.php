@@ -39,22 +39,17 @@ class AdminController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'role' => ['required', 'string', 'in:admin,user'],
-            'avatar' => ['nullable', 'image', 'max:2048'], // 2MB max
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
         ]);
 
-        $avatarPath = null;
-        if ($request->hasFile('avatar')) {
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-        }
 
         // Generate a random password
         // $randomPassword = Str::random(12);
@@ -68,7 +63,6 @@ class AdminController extends Controller
             'position' => $request->position,
             'department_id' => $request->department_id,
             'role' => $request->role,
-            'avatar' => $avatarPath,
             'email' => $request->email,
             'password' => Hash::make("password"),
         ]);
@@ -106,26 +100,17 @@ class AdminController extends Controller
     public function update(Request $request, User $admin)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
             'department_id' => ['required', 'exists:departments,id'],
-            'avatar' => ['nullable', 'image', 'max:2048'], // 2MB max
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $admin->id],
         ]);
 
-        $data = $request->except('avatar');
-
-        if ($request->hasFile('avatar')) {
-            // Delete old avatar if exists
-            if ($admin->avatar) {
-                Storage::disk('public')->delete($admin->avatar);
-            }
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
-        }
+        $data = $request->all();
 
         $admin->update($data);
 

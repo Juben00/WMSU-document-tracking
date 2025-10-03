@@ -62,7 +62,6 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
         gender: '',
         position: '',
         department_id: '',
-        avatar: null,
         email: '',
         role: 'admin',
     });

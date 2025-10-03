@@ -52,9 +52,9 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
@@ -228,9 +228,9 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
@@ -1064,9 +1064,9 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
