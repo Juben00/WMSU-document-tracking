@@ -78,6 +78,34 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const isGeneratingRef = useRef(false);
     const isPresidentDepartment = auth.user.department?.is_presidential || false;
 
+    // Upload limits (keep in sync with backend validation: max:10240 = 10MB per file)
+    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per file
+    const MAX_TOTAL_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB total per request
+    // Allowlisted extensions/MIME types; keep in sync with backend mimes
+    const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'jpg', 'jpeg', 'png', 'gif'];
+    const ALLOWED_MIMES_PREFIX = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'image/jpeg',
+        'image/png',
+        'image/gif'
+    ];
+
+    const formatBytes = (bytes: number) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const value = parseFloat((bytes / Math.pow(k, i)).toFixed(2));
+        return `${value} ${sizes[i]}`;
+    };
+
     console.log(auth.user.department?.is_presidential);
 
     // Function to generate auto order number with robust CSRF handling
@@ -247,6 +275,59 @@ const CreateDocument = ({ auth, departments }: Props) => {
             return;
         }
 
+        // Validate file types/sizes before submit to avoid 413 (Payload Too Large) and unsafe uploads
+        if (data.files && data.files.length > 0) {
+            // Type allowlist check
+            const disallowed = data.files
+                .map((f) => {
+                    const ext = f.name.split('.').pop()?.toLowerCase() || '';
+                    const mime = f.type;
+                    const extAllowed = ALLOWED_EXTENSIONS.includes(ext);
+                    const mimeAllowed = mime ? ALLOWED_MIMES_PREFIX.some((allowed) => mime === allowed) : extAllowed; // fallback to ext
+                    return { f, ext, mime, ok: extAllowed && mimeAllowed };
+                })
+                .filter(({ ok }) => !ok);
+            if (disallowed.length > 0) {
+                const list = disallowed.map(({ f }) => f.name).join(', ');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Unsupported File Type',
+                    html: `Only these file types are allowed: <br/><b>${ALLOWED_EXTENSIONS.join(', ')}</b><br/>Blocked: ${list}`,
+                    confirmButtonColor: '#b91c1c',
+                });
+                return;
+            }
+
+            // Per-file check
+            const tooLargeFiles = data.files
+                .map((f, idx) => ({ f, idx }))
+                .filter(({ f }) => f.size > MAX_FILE_SIZE_BYTES);
+            if (tooLargeFiles.length > 0) {
+                const list = tooLargeFiles
+                    .map(({ f }) => `${f.name} (${formatBytes(f.size)})`)
+                    .join(', ');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: `Each file must be ≤ ${formatBytes(MAX_FILE_SIZE_BYTES)}. Oversized: ${list}`,
+                    confirmButtonColor: '#b91c1c',
+                });
+                return;
+            }
+
+            // Total payload check
+            const totalBytes = data.files.reduce((sum, f) => sum + f.size, 0);
+            if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Total Upload Too Large',
+                    text: `Selected files total ${formatBytes(totalBytes)}, which exceeds the limit of ${formatBytes(MAX_TOTAL_UPLOAD_BYTES)}. Please remove some files or compress them.`,
+                    confirmButtonColor: '#b91c1c',
+                });
+                return;
+            }
+        }
+
         setIsSubmitting(true);
 
         // For 'for_info', must have at least one recipient
@@ -389,9 +470,41 @@ const CreateDocument = ({ auth, departments }: Props) => {
             // Clean up old object URLs
             fileObjectUrls.current.forEach(url => URL.revokeObjectURL(url));
             fileObjectUrls.current = [];
-            setData('files', files);
+            // Enforce per-file and total limits proactively on selection
+            const validFiles: File[] = [];
+            let runningTotal = 0;
+            const rejected: string[] = [];
+            files.forEach((file) => {
+                const ext = file.name.split('.').pop()?.toLowerCase() || '';
+                const mime = file.type;
+                const extAllowed = ALLOWED_EXTENSIONS.includes(ext);
+                const mimeAllowed = mime ? ALLOWED_MIMES_PREFIX.some((allowed) => mime === allowed) : extAllowed;
+                if (!extAllowed || !mimeAllowed) {
+                    rejected.push(`${file.name} (unsupported type)`);
+                    return;
+                }
+                if (file.size > MAX_FILE_SIZE_BYTES) {
+                    rejected.push(`${file.name} (${formatBytes(file.size)})`);
+                    return;
+                }
+                if (runningTotal + file.size > MAX_TOTAL_UPLOAD_BYTES) {
+                    rejected.push(`${file.name} (${formatBytes(file.size)})`);
+                    return;
+                }
+                runningTotal += file.size;
+                validFiles.push(file);
+            });
+            if (rejected.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Some files were skipped',
+                    html: `The following exceeded the limits and were not added: <br/>${rejected.join('<br/>')}`,
+                    confirmButtonColor: '#b91c1c',
+                });
+            }
+            setData('files', validFiles);
             // Only create previews for images
-            const previews = files.map((file): { type: 'image' | 'file', value: string, name: string } => {
+            const previews = validFiles.map((file): { type: 'image' | 'file', value: string, name: string } => {
                 if (file.type.startsWith('image/')) {
                     const url = URL.createObjectURL(file);
                     fileObjectUrls.current.push(url);

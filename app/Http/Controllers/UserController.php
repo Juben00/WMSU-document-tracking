@@ -622,7 +622,8 @@ class UserController extends Controller
             'document_type' => 'required|in:special_order,order,memorandum,for_info,letters,email,travel_order,city_resolution,invitations,vouchers,diploma,checks,job_orders,contract_of_service,pr',
             'description' => 'nullable|string',
             'files' => 'nullable|array',
-            'files.*' => 'nullable|file|max:10240', // 10MB max per file
+            // 10MB max per file; allow only safe office/image/text types
+            'files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif',
             'recipient_ids' => 'required|array|min:1',
             'recipient_ids.*' => 'exists:departments,id',
             'initial_recipient_id' => 'nullable|exists:departments,id',
@@ -970,7 +971,8 @@ class UserController extends Controller
             'description' => 'nullable|string',
             'selected_department_id' => 'required|exists:departments,id',
             'files' => 'nullable|array',
-            'files.*' => 'nullable|file|max:10240', // 10MB max per file
+            // 10MB max per file; allow only safe office/image/text types
+            'files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif',
         ]);
 
         $doc->order_number = $validated['order_number'];
