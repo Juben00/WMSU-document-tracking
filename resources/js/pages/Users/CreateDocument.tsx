@@ -78,7 +78,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const isGeneratingRef = useRef(false);
     const isPresidentDepartment = auth.user.department?.is_presidential || false;
 
-    // Upload limits (keep in sync with backend validation: max:10240 = 10MB per file)
+    // Upload limits (keep in sync with backend validation: max:51200 = 50MB per file)
     const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB per file
     const MAX_TOTAL_UPLOAD_BYTES = 50 * 1024 * 1024 * 1024; // 1GB total per request
     // Allowlisted extensions/MIME types; keep in sync with backend mimes
