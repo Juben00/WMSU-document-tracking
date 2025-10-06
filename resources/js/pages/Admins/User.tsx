@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
-import { Plus, Trash2, Lock, Unlock, Eye, Pencil } from 'lucide-react';
+import { useForm, router } from '@inertiajs/react';
+import { Plus, Trash2, Lock, Unlock, Eye, Pencil, Key } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import AddNewAdmin from '@/components/Admin/AddAdmin';
@@ -53,6 +53,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false);
     const [filter, setFilter] = useState('');
     const { processing, delete: destroy, patch, data, setData, post, errors, reset, put } = useForm({
         first_name: '',
@@ -64,6 +65,8 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
         department_id: '',
         email: '',
         role: 'admin',
+        new_password: '',
+        confirm_password: '',
     });
 
     const handleToggleStatus = (user: User) => {
@@ -131,6 +134,41 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
         setData('email', user.email);
         setData('role', user.role);
         setIsEditDialogOpen(true);
+    };
+
+    const handlePasswordChange = (user: User) => {
+        setSelectedAdmin(user);
+        setData('new_password', '');
+        setData('confirm_password', '');
+        setIsPasswordChangeDialogOpen(true);
+    };
+
+    const handlePasswordChangeSubmit = () => {
+        if (data.new_password !== data.confirm_password) {
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        if (data.new_password.length < 8) {
+            toast.error('Password must be at least 8 characters long');
+            return;
+        }
+
+        // Use router.patch directly to send only password data
+        router.patch(route('admins.change-password', selectedAdmin?.id), {
+            new_password: data.new_password,
+            new_password_confirmation: data.confirm_password,
+        }, {
+            onSuccess: () => {
+                toast.success('Password changed successfully');
+                setIsPasswordChangeDialogOpen(false);
+                setData('new_password', '');
+                setData('confirm_password', '');
+            },
+            onError: (errors: any) => {
+                toast.error('Failed to change password. Please try again.');
+            }
+        });
     };
 
     return (
@@ -266,6 +304,14 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
+                                                onClick={() => handlePasswordChange(user)}
+                                                title="Change Password"
+                                            >
+                                                <Key className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={() => handleToggleStatus(user)}
                                                 title={user.is_active ? 'Deactivate Admin' : 'Activate Admin'}
                                                 disabled={!user.is_active && user.id === auth.user.id}
@@ -374,6 +420,65 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                 errors={errors}
                                 reset={reset}
                             />
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* Password Change Dialog */}
+                <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Change Password for {selectedAdmin ? getFullName(selectedAdmin) : ''}</DialogTitle>
+                        </DialogHeader>
+                        {selectedAdmin && (
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="new_password">New Password</Label>
+                                    <Input
+                                        id="new_password"
+                                        type="password"
+                                        value={data.new_password}
+                                        onChange={(e) => setData('new_password', e.target.value)}
+                                        placeholder="Enter new password"
+                                        className="mt-1"
+                                    />
+                                    {errors.new_password && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.new_password}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="confirm_password">Confirm Password</Label>
+                                    <Input
+                                        id="confirm_password"
+                                        type="password"
+                                        value={data.confirm_password}
+                                        onChange={(e) => setData('confirm_password', e.target.value)}
+                                        placeholder="Confirm new password"
+                                        className="mt-1"
+                                    />
+                                    {errors.confirm_password && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.confirm_password}</p>
+                                    )}
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setIsPasswordChangeDialogOpen(false);
+                                            setData('new_password', '');
+                                            setData('confirm_password', '');
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handlePasswordChangeSubmit}
+                                        disabled={processing || !data.new_password || !data.confirm_password}
+                                    >
+                                        Change Password
+                                    </Button>
+                                </div>
+                            </div>
                         )}
                     </DialogContent>
                 </Dialog>

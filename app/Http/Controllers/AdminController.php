@@ -52,7 +52,7 @@ class AdminController extends Controller
 
 
         // Generate a random password
-        // $randomPassword = Str::random(12);
+        $randomPassword = Str::random(12);
 
         $user = User::create([
             'first_name' => Str::title(trim($request->first_name)),
@@ -64,13 +64,13 @@ class AdminController extends Controller
             'department_id' => $request->department_id,
             'role' => $request->role,
             'email' => $request->email,
-            'password' => Hash::make("password"),
+            'password' => Hash::make($randomPassword),
         ]);
 
         // Notify the user about their account creation (in-app)
         $user->notify(new InAppNotification('Your admin account has been created.', ['user_id' => $user->id]));
         // Send email with credentials
-        $user->notify(new SendAdminAccountMail($user->first_name . ' ' . $user->last_name, $user->email, "password"));
+        $user->notify(new SendAdminAccountMail($user->first_name . ' ' . $user->last_name, $user->email, $randomPassword));
 
         return redirect()->route('admins.index');
     }
@@ -130,6 +130,23 @@ class AdminController extends Controller
         $admin->notify(new InAppNotification('Your admin account has been updated.', ['admin_id' => $admin->id]));
 
         return redirect()->route('admins.index');
+    }
+
+    public function changePassword(Request $request, User $admin)
+    {
+        $request->validate([
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $admin->update([
+            'password' => Hash::make($request->new_password),
+            'password_changed_at' => now(),
+        ]);
+
+        // Notify the user about their password change
+        $admin->notify(new InAppNotification('Your password has been changed by an administrator.', ['user_id' => $admin->id]));
+
+        return redirect()->route('admins.index')->with('success', 'Password changed successfully.');
     }
 
     public function dashboard()

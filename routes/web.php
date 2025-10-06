@@ -40,6 +40,7 @@ Route::middleware(['auth', 'verified', 'require_password_change'])->group(functi
         Route::post('/Admin/users', [AdminController::class, 'store'])->name('admins.store');
         Route::put('/Admin/users/{admin}', [AdminController::class, 'update'])->name('admins.update');
         Route::patch('/Admin/users/{admin}/toggle-status', [AdminController::class, 'toggleStatus'])->name('admins.toggle-status');
+        Route::patch('/Admin/users/{admin}/change-password', [AdminController::class, 'changePassword'])->name('admins.change-password');
         Route::delete('/Admin/users/{admin}', [AdminController::class, 'destroy'])->name('admins.destroy');
 
         // Office Management Routes
