@@ -79,10 +79,10 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const isPresidentDepartment = auth.user.department?.is_presidential || false;
 
     // Upload limits (keep in sync with backend validation: max:10240 = 10MB per file)
-    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per file
-    const MAX_TOTAL_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB total per request
+    const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB per file
+    const MAX_TOTAL_UPLOAD_BYTES = 50 * 1024 * 1024 * 1024; // 1GB total per request
     // Allowlisted extensions/MIME types; keep in sync with backend mimes
-    const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'jpg', 'jpeg', 'png', 'gif'];
+    const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png'];
     const ALLOWED_MIMES_PREFIX = [
         'application/pdf',
         'application/msword',
@@ -94,7 +94,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
         'text/plain',
         'image/jpeg',
         'image/png',
-        'image/gif'
     ];
 
     const formatBytes = (bytes: number) => {
