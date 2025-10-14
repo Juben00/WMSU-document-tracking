@@ -25,7 +25,6 @@ class DocumentFactory extends Factory
             'document_type' => $this->faker->randomElement(['memo', 'letter', 'report', 'proposal', 'other']),
             'is_public' => $this->faker->boolean(20),
             'public_token' => $this->faker->uuid(),
-            'barcode_path' => null,
             'barcode_value' => $this->faker->numerify('BRC-#####'),
             'owner_id' => User::factory(),
             'department_id' => null,

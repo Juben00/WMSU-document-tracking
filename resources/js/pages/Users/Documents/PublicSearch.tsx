@@ -14,7 +14,6 @@ interface Document {
     document_type: 'special_order' | 'order' | 'memorandum' | 'for_info';
     is_public: boolean;
     public_token: string;
-    barcode_path?: string;
     barcode_value?: string;
     created_at: string;
     owner: {

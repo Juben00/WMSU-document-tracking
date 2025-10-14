@@ -78,7 +78,6 @@ interface Document {
     recipient_status: string | null;
     owner_id: number;
     is_public: boolean;
-    barcode_path?: string;
     public_token?: string;
     barcode_value?: string;
     department_id: number;
@@ -600,7 +599,7 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                         {/* Subject */}
                                         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
                                             <dt className="text-sm font-semibold text-gray-600 dark:text-gray-100 mb-2">Subject</dt>
-                                            <dd className="mt-1 text-lg text-gray-900 dark:text-gray-200 font-semibold leading-relaxed">{document.subject}</dd>
+                                            <dd className="mt-1 text-gray-900 dark:text-gray-200 leading-relaxed">{document.subject}</dd>
                                         </div>
 
                                         {/* Description */}
@@ -664,45 +663,15 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                 </div>
                                 {/* Barcode & Link Section */}
                                 <div className="col-span-2 flex flex-col items-center gap-4 w-full h-fit ">
-                                    {(document.barcode_path || document.is_public) && (
+                                    {(document.barcode_value || document.is_public) && (
                                         <div className=" bg-white dark:bg-gray-900 rounded-xl w-full h-fit p-6 border border-gray-200 dark:border-gray-700">
                                             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                                                 <ScanEye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                                 Access Document
                                             </h3>
-                                            {document.barcode_path && (
+                                            {document.barcode_value && (
                                                 <>
-                                                    {/* <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" /> */}
-                                                    {/* Barcode Value Card */}
-                                                    {/* <div className="w-full max-w-sm mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 dark:border-gray-700 mb-4">
-                                                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Barcode</span>
-                                                        <div className="flex items-center w-full justify-center gap-2 mb-2">
-                                                            <span className="text-base font-mono text-gray-800 dark:text-gray-200 truncate max-w-[200px]" title={document.barcode_value || document.public_token}>
-                                                                {document.barcode_value || document.public_token}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(document.barcode_value || document.public_token || '');
-                                                                    setCopied(true);
-                                                                    setTimeout(() => setCopied(false), 2000);
-                                                                }}
-                                                                className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900 transition"
-                                                                title="Copy"
-                                                                type="button"
-                                                            >
-                                                                <Copy className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                                            </button>
-                                                            <a
-                                                                href={`/storage/${document.barcode_path}`}
-                                                                download={`barcode-${document.order_number || document.id}.svg`}
-                                                                className="p-2 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 transition"
-                                                                title="Download"
-                                                            >
-                                                                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                                            </a>
-                                                        </div>
-                                                    </div> */}
-                                                    <BarcodeComponent barcode_path={document.barcode_path} barcode_value={document.barcode_value} />
+                                                    <BarcodeComponent barcode_value={document.barcode_value} />
                                                     <span className="text-xs text-gray-500 dark:text-gray-200 text-center font-semibold mb-2">
                                                         Scan or use the code to access the document
                                                     </span>

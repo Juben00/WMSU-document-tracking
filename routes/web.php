@@ -22,9 +22,9 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'require_password_change'])->group(function () {
     Route::get('dashboard', function () {
-    return Auth::user()->role === 'superadmin'
-        ? app(AdminController::class)->dashboard()
-        : Inertia::render('Users/Dashboard');
+        return Auth::user()->role === 'superadmin'
+            ? app(AdminController::class)->dashboard()
+            : Inertia::render('Users/Dashboard');
     })->name('dashboard');
 
 
@@ -33,7 +33,7 @@ Route::middleware(['auth', 'verified', 'require_password_change'])->group(functi
     Route::post('/password/change', [FirstTimePasswordController::class, 'update'])->name('password.update');
 
     // Admin and Office Management Routes - Superadmin Only
-        // Admin Management Routes
+    // Admin Management Routes
     Route::middleware('role:superadmin')->group(function () {
 
         Route::get('/Admin/users', [AdminController::class, 'index'])->name('admins.index');
@@ -69,7 +69,7 @@ Route::middleware(['auth', 'verified', 'require_password_change'])->group(functi
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-    Route::get('/documents', [UserController::class, 'documents'])->name('users.documents');
+    Route::get('/document', [UserController::class, 'documents'])->name('users.documents');
     Route::get('/profile', [UserController::class, 'profile'])->name('users.profile');
     Route::patch('/profile', [UserController::class, 'updateProfile'])->name('profile.update');
     Route::put('/profile/password', [UserController::class, 'updatePassword'])->name('users.password.update');
@@ -142,5 +142,5 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/documents/{document}/files/{file}', [DocumentController::class, 'downloadDocument'])->name('documents.download');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

@@ -24,6 +24,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
+import BarcodeComponent from '@/components/barcode';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,7 +40,6 @@ interface PublishedDocument {
     status: string;
     is_public: boolean;
     public_token: string;
-    barcode_path?: string;
     barcode_value?: string;
     created_at: string;
     owner: {
@@ -351,6 +351,7 @@ export default function PublishedDocuments({ publishedDocuments }: Props) {
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                                        <br />
                                         <Badge className={getStatusColor(selectedDocument.status)}>
                                             {selectedDocument.status.charAt(0).toUpperCase() + selectedDocument.status.slice(1)}
                                         </Badge>
@@ -377,30 +378,7 @@ export default function PublishedDocuments({ publishedDocuments }: Props) {
                                     </div>
                                 </div>
 
-                                {selectedDocument.barcode_path && (
-                                    <div>
-                                        <Label className="text-sm font-medium text-muted-foreground">Barcode</Label>
-                                        <div className="mt-2 p-4 border rounded-lg bg-gray-50">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="flex items-center gap-2">
-                                                    <BarChart3 className="h-5 w-5 text-gray-600" />
-                                                    <span className="text-sm text-gray-600">Barcode available for this document</span>
-                                                </div>
-                                                <img
-                                                    src={`/storage/${selectedDocument.barcode_path}`}
-                                                    alt="Barcode"
-                                                    className="w-64 h-32 border rounded bg-white p-2"
-                                                />
-                                                <div className="text-center">
-                                                    <p className="text-xs text-gray-500 mb-1">Barcode Value:</p>
-                                                    <p className="text-sm font-mono text-gray-700 bg-white px-3 py-1 rounded border">
-                                                        {selectedDocument.barcode_value || selectedDocument.public_token}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+
 
                                 <div className="flex justify-end gap-2 pt-4 border-t">
                                     <Button

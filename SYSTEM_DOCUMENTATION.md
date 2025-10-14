@@ -197,7 +197,6 @@ The WMSU Document Management and Tracking System (DMTS) is a comprehensive web-b
 - through_department_ids (JSON Array)
 - is_public (Boolean)
 - public_token (Unique String)
-- barcode_path
 - barcode_value
 - created_at, updated_at
 ```

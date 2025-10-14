@@ -64,7 +64,6 @@ interface Props {
         subject: string
         order_number: string
         barcode_value: string
-        barcode_path: string
         barcode_svg_url: string
     }
 }
@@ -163,7 +162,6 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                             const root = createRoot(container);
                             root.render(
                                 React.createElement(BarcodeComponent, {
-                                    barcode_path: document_data.barcode_path,
                                     barcode_value: document_data.barcode_value,
                                     className: "mx-auto"
                                 })

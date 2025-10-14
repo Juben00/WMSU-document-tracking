@@ -28,7 +28,6 @@ class Document extends Model
         'through_department_ids',
         'is_public',
         'public_token',
-        'barcode_path',
         'barcode_value',
     ];
 

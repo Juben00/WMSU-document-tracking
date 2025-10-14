@@ -313,14 +313,13 @@ class AdminController extends Controller
                     'status' => $document->status,
                     'is_public' => $document->is_public,
                     'public_token' => $document->public_token,
-                    'barcode_path' => $document->barcode_path,
                     'barcode_value' => $document->barcode_value,
                     'created_at' => $document->created_at,
                     'owner' => [
                         'id' => $document->owner->id,
                         'name' => $document->owner->first_name . ' ' . $document->owner->last_name,
                         'email' => $document->owner->email,
-                        'department' => $document->owner->department->name ?? 'No Department',
+                        'office' => $document->owner->department->name ?? 'No Department',
                     ],
                     'files_count' => $document->files->count(),
                     'public_url' => route('documents.public_view', ['public_token' => $document->public_token]),
@@ -338,16 +337,11 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Document is not published.');
         }
 
-        // Delete barcode file if exists
-        if ($document->barcode_path) {
-            Storage::disk('public')->delete($document->barcode_path);
-        }
 
         // Update document
         $document->update([
             'is_public' => false,
             'public_token' => null,
-            'barcode_path' => null,
             'barcode_value' => null,
         ]);
 

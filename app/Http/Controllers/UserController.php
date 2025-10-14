@@ -727,24 +727,13 @@ class UserController extends Controller
         // Generate barcode at the moment the document is sent
         $currentUser = Auth::user();
         $department = $currentUser->department;
-        $departmentCode = $department ? $department->code : 'NOCODE';
 
         // use the value of order_number as the barcode value but without the dashes
         $barcodeValue = $document->order_number;
         $barcodeValue = str_replace('-', '', $barcodeValue);
 
-        // Generate barcode SVG
-        $generator = new BarcodeGeneratorSVG();
-        $barcodeSvg = $generator->getBarcode($barcodeValue, $generator::TYPE_CODE_128);
-
-        // Save SVG to storage
-        $barcodePath = 'barcodes/document_' . $document->id . '_' . $barcodeValue . '.svg';
-        Storage::disk('public')->put($barcodePath, $barcodeSvg);
-        $barcodePath = 'public/'. $barcodePath;
-
         // Save to document
         $document->update([
-            'barcode_path' => $barcodePath,
             'barcode_value' => $barcodeValue,
         ]);
 
@@ -777,7 +766,7 @@ class UserController extends Controller
             foreach ($request->file('files') as $file) {
                 $filePath = $file->store('documents', 'public');
                 $document->files()->create([
-                    'file_path' => 'public/'. $filePath,
+                    'file_path' => $filePath,
                     'original_filename' => $file->getClientOriginalName(),
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
@@ -834,8 +823,6 @@ class UserController extends Controller
                 'subject' => $document->subject,
                 'order_number' => $document->order_number,
                 'barcode_value' => $document->barcode_value,
-                'barcode_path' => $document->barcode_path,
-                'barcode_svg_url' => asset(str_replace('public/', 'storage/', $document->barcode_path))
             ]
         ]);
 
@@ -1005,7 +992,7 @@ class UserController extends Controller
             foreach ($request->file('files') as $file) {
                 $filePath = $file->store('documents', 'public');
                 $doc->files()->create([
-                    'file_path' => 'public/'. $filePath,
+                    'file_path' => $filePath,
                     'original_filename' => $file->getClientOriginalName(),
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
@@ -1199,7 +1186,6 @@ class UserController extends Controller
                     'status' => $document->status,
                     'is_public' => $document->is_public,
                     'public_token' => $document->public_token,
-                    'barcode_path' => $document->barcode_path,
                     'barcode_value' => $document->barcode_value,
                     'created_at' => $document->created_at,
                     'files_count' => $document->files->count(),
@@ -1225,7 +1211,6 @@ class UserController extends Controller
                 'status' => $document->status,
                 'is_public' => $document->is_public,
                 'public_token' => $document->public_token,
-                'barcode_path' => $document->barcode_path,
                 'barcode_value' => $document->barcode_value,
                 'created_at' => $document->created_at,
                 'files_count' => $document->files->count(),
@@ -1259,7 +1244,6 @@ class UserController extends Controller
         $document->update([
             'is_public' => false,
             'public_token' => null,
-            'barcode_path' => null,
             'barcode_value' => null,
         ]);
 

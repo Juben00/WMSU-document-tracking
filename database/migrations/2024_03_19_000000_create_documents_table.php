@@ -22,7 +22,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_public')->default(false);
             $table->string('public_token')->unique()->nullable();
-            $table->string('barcode_path')->nullable();
             $table->timestamps();
         });
     }
@@ -34,7 +33,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('documents');
         Schema::table('documents', function (Blueprint $table) {
-            $table->dropColumn(['is_public', 'public_token', 'barcode_path']);
+            $table->dropColumn(['is_public', 'public_token']);
         });
     }
 };

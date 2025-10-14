@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Download, FileText, FileCheck, Users, BarChart3, Copy, Calendar, User, Hash, ScanEye, ExternalLink } from 'lucide-react';
+import BarcodeComponent from '@/components/barcode';
 
 interface DocumentFile {
     id: number;
@@ -67,7 +68,6 @@ interface Document {
     };
     files: DocumentFile[];
     recipients: DocumentRecipient[];
-    barcode_path?: string;
     public_token?: string;
     barcode_value?: string;
     department_id: number;
@@ -202,7 +202,7 @@ const PublicView: React.FC<Props> = ({ document }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* Header Section */}
                 <div className="mb-8 flex items-center gap-3">
                     <FileText className="w-7 h-7 text-red-600" />
@@ -271,41 +271,20 @@ const PublicView: React.FC<Props> = ({ document }) => {
                             </dl>
                         </div>
                         {/* Barcode & Link Section */}
-                        {(document.barcode_path || document.public_token) && (
+                        {(document.barcode_value || document.public_token) && (
                             <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-dashed border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center gap-2 mb-2">
                                     <ScanEye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Access Document</h2>
                                 </div>
-                                {document.barcode_path && (
-                                    <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-48 mb-3 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" />
-                                )}
-                                <div className="w-full max-w-sm mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 dark:border-gray-700 mb-2">
-                                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Barcode</span>
-                                    <div className="flex items-center w-full justify-center gap-2 mb-2">
-                                        <span className="text-base font-mono text-gray-800 dark:text-gray-200 truncate max-w-[200px]" title={document.barcode_value || document.public_token}>
-                                            {document.barcode_value || document.public_token}
+                                {document.barcode_value && (
+                                    <>
+                                        <BarcodeComponent barcode_value={document.barcode_value} />
+                                        <span className="text-xs text-gray-500 dark:text-gray-200 text-center font-semibold mb-2">
+                                            Scan or use the code to access the document
                                         </span>
-                                        <button
-                                            onClick={() => copyToClipboard(document.barcode_value || document.public_token || '')}
-                                            className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900 transition"
-                                            title="Copy"
-                                            type="button"
-                                        >
-                                            <Copy className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                        </button>
-                                        {document.barcode_path && (
-                                            <a
-                                                href={`/storage/${document.barcode_path}`}
-                                                download={`barcode-${document.order_number || document.id}.svg`}
-                                                className="p-2 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 transition"
-                                                title="Download"
-                                            >
-                                                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
+                                    </>
+                                )}
                                 {document.public_token && (
                                     <div className="w-full max-w-sm mx-auto bg-blue-50 dark:bg-blue-900/20 rounded-lg shadow p-4 flex flex-col items-center border border-blue-200 dark:border-blue-700 mt-2">
                                         <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">Public Link</span>

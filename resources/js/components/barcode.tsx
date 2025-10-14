@@ -6,13 +6,11 @@ import { format } from 'date-fns';
 import Barcode from 'react-barcode';
 
 interface BarcodeProps {
-    barcode_path?: string;
     barcode_value?: string;
     className?: string;
 }
 
 const BarcodeComponent: React.FC<BarcodeProps> = ({
-    barcode_path,
     barcode_value,
     className = '',
 }) => {
@@ -308,13 +306,21 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
         >
             {/* Barcode Display */}
             <div className="flex flex-col items-center space-y-4">
-                {barcode_path ? (
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 shadow-inner">
-                        <img
-                            src={`/storage/${barcode_path}`}
-                            alt="Document Barcode"
-                            className="max-h-32 mx-auto"
-                            style={{ imageRendering: 'pixelated' }}
+                {barcode_value ? (
+                    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-6 shadow-inner text-center">
+                        <Barcode
+                            value={barcode_value}
+                            format="CODE128"
+                            width={2}
+                            height={100}
+                            displayValue={true}
+                            fontSize={16}
+                            background="#ffffff"
+                            lineColor="#000000"
+                            margin={10}
+                            textAlign="center"
+                            textPosition="bottom"
+                            textMargin={5}
                         />
                     </div>
                 ) : (
@@ -326,25 +332,23 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
                 )}
 
                 {/* Barcode Value & Actions */}
-                <div className="w-full bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 px-5 py-3 flex items-center justify-between shadow-sm">
-                    <span className="font-mono text-lg font-semibold text-gray-800 dark:text-gray-200 tracking-wide">
-                        {barcode_value || "N/A"}
-                    </span>
-
+                <div className=" bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 px-5 py-3 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-2">
                         {barcode_value && (
                             <button
                                 onClick={handleCopy}
-                                className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                className="p-2 text-gray-500 bg-white cursor-pointer flex items-center gap-2 border px-4 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title={copied ? "Copied!" : "Copy barcode value"}
                             >
                                 <Copy className="w-4 h-4" />
+                                <span className="hidden sm:inline">Copy</span>
+
                             </button>
                         )}
                         <button
                             onClick={generateDocument}
                             disabled={downloading}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 cursor-pointer px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Download as Word Document"
                         >
                             <Download
