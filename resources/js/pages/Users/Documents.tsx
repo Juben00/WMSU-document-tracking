@@ -73,15 +73,6 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
     const documentsArray = Array.isArray(documents) ? documents : [];
     const receivedDocumentsArray = Array.isArray(receivedDocuments) ? receivedDocuments : [];
 
-    // Debug logging
-    console.log('Documents Debug Info:', {
-        documents: documentsArray,
-        receivedDocuments: receivedDocumentsArray,
-        documentsType: typeof documents,
-        receivedDocumentsType: typeof receivedDocuments,
-        authUser: auth.user
-    });
-
     // Merge documents and receivedDocuments, removing duplicates by id
     const allDocuments = [...documentsArray, ...receivedDocumentsArray]
         .filter((doc, index, self) => index === self.findIndex(d => d.id === doc.id));
@@ -197,7 +188,6 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                 })
             },
             onError: (errors: any) => {
-                console.log("Errors:", errors)
                 Swal.fire({
                     icon: 'error',
                     title: 'Document Not Found',
@@ -314,21 +304,6 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
             const isNonForInfoReceived = (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"));
 
             const shouldInclude = isCurrentFiscalYearDoc && isNotOwnerOrReturned && (isForInfoReceived || isNonForInfoReceived);
-
-            // Debug logging for received documents filtering
-            console.log(`Document ${doc.id} (${doc.subject}) filtering:`, {
-                isCurrentFiscalYearDoc,
-                isNotOwnerOrReturned,
-                isForInfoReceived,
-                isNonForInfoReceived,
-                shouldInclude,
-                document_type: doc.document_type,
-                recipient_status: doc.recipient_status,
-                owner_id: doc.owner_id,
-                current_user_id: auth.user.id,
-                department_id: doc.department_id,
-                user_department_id: (auth.user as any).department_id
-            });
 
             return shouldInclude;
         }

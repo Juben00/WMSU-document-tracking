@@ -34,7 +34,6 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
         setDownloading(true);
 
         try {
-            console.log('Starting DOCX generation...');
 
             // Helper function to convert image to base64
             const imageToBase64 = async (imagePath: string): Promise<string> => {
@@ -106,7 +105,6 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
                         // Clean up
                         document.body.removeChild(tempDiv);
 
-                        console.log('Successfully generated barcode as base64');
                     }
                 } catch (error) {
                     console.warn('Failed to generate barcode:', error);
@@ -118,7 +116,6 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
             try {
                 const logoPath = `${window.location.origin}/images/wmsu_logo.png`;
                 logoImageData = await imageToBase64(logoPath);
-                console.log('Successfully converted logo to base64');
             } catch (logoError) {
                 console.warn('Could not load WMSU logo:', logoError);
             }
@@ -281,7 +278,6 @@ const BarcodeComponent: React.FC<BarcodeProps> = ({
             const fileName = `WMSU-DMTS-Barcode-${format(new Date(), 'yyyyMMdd-HHmmss')}.docx`;
 
             saveAs(buffer, fileName);
-            console.log('DOCX generated successfully');
 
         } catch (error) {
             console.error('Error generating DOCX:', error);

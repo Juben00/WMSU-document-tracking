@@ -105,7 +105,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
         return `${value} ${sizes[i]}`;
     };
 
-    console.log(auth.user.department?.is_presidential);
 
     // Function to generate auto order number with robust CSRF handling
     const generateOrderNumber = async (retryCount = 0) => {
@@ -118,11 +117,9 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
-            console.log(`Generating order number (attempt ${retryCount + 1})`);
 
             // Wait for CSRF token to be available on first attempt
             if (retryCount === 0 && !csrfToken) {
-                console.log("⏳ Waiting for CSRF token...");
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
@@ -133,7 +130,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
             if (response.data?.order_number) {
                 setData("order_number", response.data.order_number);
-                console.log("✅ Order number generated:", response.data.order_number);
 
                 // Reset generation state immediately on success
                 isGeneratingRef.current = false;
@@ -145,16 +141,14 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
         } catch (error: any) {
             const status = error.response?.status;
-            console.error(`❌ Error generating order number (attempt ${retryCount + 1}):`, error.response?.data?.error || error.message);
+            console.error(`Error generating order number (attempt ${retryCount + 1}):`, error.response?.data?.error || error.message);
 
             // Handle CSRF 419 errors with automatic retry
             if (status === 419 && retryCount < 3) {
-                console.log(`🔄 CSRF error detected, retrying in ${(retryCount + 1) * 1000}ms...`);
 
                 // Try to refresh CSRF token first
                 try {
                     await axios.get(route("users.refresh-csrf"));
-                    console.log("🔄 CSRF token refreshed");
                 } catch (refreshError) {
                     console.warn("Failed to refresh CSRF token:", refreshError);
                 }

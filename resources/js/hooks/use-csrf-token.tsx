@@ -28,7 +28,6 @@ export function useCsrfToken() {
                 (window as any).axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
             }
 
-            console.log('CSRF token updated:', csrfToken);
         }
     }, [csrfToken]);
 

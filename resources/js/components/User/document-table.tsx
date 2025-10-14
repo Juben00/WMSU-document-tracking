@@ -75,7 +75,6 @@ const DocumentTable: React.FC<DocumentTableProps> = ({
         )
     }
 
-    console.log(documents);
 
     return (
         <div className="overflow-x-auto">
