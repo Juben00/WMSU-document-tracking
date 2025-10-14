@@ -199,7 +199,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Create New {selectedUserType === 'admin' ? 'Admin' : 'User'}</DialogTitle>
+                                    <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white"   >Create New {selectedUserType === 'admin' ? 'Admin' : 'User'}</DialogTitle>
                                 </DialogHeader>
                                 <div className="">
                                     <Label htmlFor="user_type">User Type</Label>
@@ -343,7 +343,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Admin Details</DialogTitle>
+                            <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Admin Details</DialogTitle>
                         </DialogHeader>
                         {selectedAdmin && (
                             <div className="space-y-4">
@@ -406,7 +406,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Edit Admin</DialogTitle>
+                            <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Edit Admin</DialogTitle>
                         </DialogHeader>
                         {selectedAdmin && (
                             <EditAdmin
@@ -428,7 +428,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                 <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Change Password for {selectedAdmin ? getFullName(selectedAdmin) : ''}</DialogTitle>
+                            <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Change Password for {selectedAdmin ? getFullName(selectedAdmin) : ''}</DialogTitle>
                         </DialogHeader>
                         {selectedAdmin && (
                             <div className="space-y-4">
