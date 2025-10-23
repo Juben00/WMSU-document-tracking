@@ -26,6 +26,11 @@ const mainNavItems: NavItem[] = [
         icon: Users2,
     },
     {
+        title: 'Documents',
+        href: '/Admin/documents',
+        icon: Folder,
+    },
+    {
         title: 'Published Documents',
         href: '/Admin/published-documents',
         icon: FileText,
@@ -42,18 +47,6 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/react-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits#react',
-    //     icon: BookOpen,
-    // },
-];
 
 export function AppSidebar() {
     const { state } = useSidebar();
@@ -63,13 +56,15 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard" prefetch>
+                            <Link href="/dashboard" prefetch className="py-10 border-2 border-gray-200 bg-white">
                                 {state === 'collapsed' ? (
                                     <div className="flex items-center justify-center">
                                         <WmsuLogo className="size-8" />
                                     </div>
                                 ) : (
-                                    <AppLogo />
+                                    <div className="flex items-center justify-center">
+                                        <AppLogo />
+                                    </div>
                                 )}
                             </Link>
                         </SidebarMenuButton>
@@ -82,7 +77,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

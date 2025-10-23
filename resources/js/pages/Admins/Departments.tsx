@@ -153,7 +153,7 @@ export default function Departments({ departments, auth }: Props) {
                                     <TableCell>{department.name}</TableCell>
                                     <TableCell>{department.code}</TableCell>
                                     <TableCell>{department.description}</TableCell>
-                                    <TableCell>{department.type}</TableCell>
+                                    <TableCell className="capitalize">{department.type}</TableCell>
                                     <TableCell>{department.is_presidential ? 'Yes' : 'No'}</TableCell>
                                     <TableCell>{format(new Date(department.created_at), 'MMM d, yyyy')}</TableCell>
                                     <TableCell className="text-right">

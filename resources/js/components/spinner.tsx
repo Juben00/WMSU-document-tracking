@@ -44,7 +44,7 @@ const Spinner: React.FC<SpinnerProps> = ({
                     {/* WMSU Logo in center */}
                     <div className="relative z-10 bg-white rounded-full p-3 shadow-lg">
                         <img
-                            src="/images/wmsu_logo.png"
+                            src="/storage/images/wmsu_logo.png"
                             alt="WMSU Logo"
                             className="w-12 h-12 object-contain"
                         />

@@ -64,6 +64,7 @@ interface Props {
         subject: string
         order_number: string
         barcode_value: string
+        barcode_path: string
         barcode_svg_url: string
     }
 }
@@ -72,6 +73,15 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
     // Ensure documents is always an array to prevent TypeError
     const documentsArray = Array.isArray(documents) ? documents : [];
     const receivedDocumentsArray = Array.isArray(receivedDocuments) ? receivedDocuments : [];
+
+    // Debug logging
+    console.log('Documents Debug Info:', {
+        documents: documentsArray,
+        receivedDocuments: receivedDocumentsArray,
+        documentsType: typeof documents,
+        receivedDocumentsType: typeof receivedDocuments,
+        authUser: auth.user
+    });
 
     // Merge documents and receivedDocuments, removing duplicates by id
     const allDocuments = [...documentsArray, ...receivedDocumentsArray]
@@ -153,6 +163,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                             const root = createRoot(container);
                             root.render(
                                 React.createElement(BarcodeComponent, {
+                                    barcode_path: document_data.barcode_path,
                                     barcode_value: document_data.barcode_value,
                                     className: "mx-auto"
                                 })
@@ -188,6 +199,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                 })
             },
             onError: (errors: any) => {
+                console.log("Errors:", errors)
                 Swal.fire({
                     icon: 'error',
                     title: 'Document Not Found',
@@ -304,6 +316,21 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
             const isNonForInfoReceived = (doc.document_type !== "for_info" && isDocumentReceivedByUser(doc) && (doc.recipient_status === "received" || doc.recipient_status === "approved" || doc.recipient_status === "rejected"));
 
             const shouldInclude = isCurrentFiscalYearDoc && isNotOwnerOrReturned && (isForInfoReceived || isNonForInfoReceived);
+
+            // Debug logging for received documents filtering
+            console.log(`Document ${doc.id} (${doc.subject}) filtering:`, {
+                isCurrentFiscalYearDoc,
+                isNotOwnerOrReturned,
+                isForInfoReceived,
+                isNonForInfoReceived,
+                shouldInclude,
+                document_type: doc.document_type,
+                recipient_status: doc.recipient_status,
+                owner_id: doc.owner_id,
+                current_user_id: auth.user.id,
+                department_id: doc.department_id,
+                user_department_id: (auth.user as any).department_id
+            });
 
             return shouldInclude;
         }
@@ -538,7 +565,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                     </div>
 
                     {/* Enhanced Tabs */}
-                    <Card className="mb-8 border-2 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <Card className="mb-8 border-2 shadow-lg bg-white dark:bg-gray-800 dark:to-gray-900">
                         <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 ">
                                 {tabConfig.map((tab) => {
@@ -578,7 +605,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                     </Card>
 
                     {/* Enhanced Search and Filter Section */}
-                    <Card className="mb-8 border-2 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <Card className="mb-8 border-2 shadow-lg  bg-white dark:bg-gray-800 dark:to-gray-900">
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
@@ -712,7 +739,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                     </Card>
 
                     {/* Enhanced Documents Grid */}
-                    <Card className="border-2 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <Card className="border-2 shadow-lg bg-white dark:bg-gray-800 dark:to-gray-900">
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
