@@ -56,7 +56,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard" prefetch className="py-10 border-2 border-gray-200 bg-white">
+                            <Link href="/dashboard" prefetch className="py-10 border-2 border-gray-200 bg-white dark:bg-neutral-900 dark:border-neutral-800">
                                 {state === 'collapsed' ? (
                                     <div className="flex items-center justify-center">
                                         <WmsuLogo className="size-8" />
