@@ -52,9 +52,9 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
@@ -64,10 +64,10 @@ class UserController extends Controller
         $randomPassword = Str::random(12);
 
         $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'middle_name' => $request->middle_name,
-            'suffix' => $request->suffix,
+            'first_name' => Str::title(trim($request->first_name)),
+            'last_name' => Str::title(trim($request->last_name)),
+            'middle_name' => $request->filled('middle_name') ? Str::title(trim($request->middle_name)) : null,
+            'suffix' => $request->filled('suffix') ? Str::title(trim($request->suffix)) : null,
             'gender' => $request->gender,
             'position' => $request->position,
             'department_id' => Auth::user()->department_id,
@@ -228,9 +228,9 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
@@ -244,7 +244,18 @@ class UserController extends Controller
         ]);
 
         $user = User::find(Auth::id());
-        $user->fill($validated);
+        // Normalize capitalization on name fields
+        $user->first_name = Str::title(trim($validated['first_name']));
+        $user->last_name = Str::title(trim($validated['last_name']));
+        $user->middle_name = isset($validated['middle_name']) && $validated['middle_name'] !== null
+            ? Str::title(trim($validated['middle_name']))
+            : null;
+        $user->suffix = isset($validated['suffix']) && $validated['suffix'] !== null
+            ? Str::title(trim($validated['suffix']))
+            : null;
+        $user->position = $validated['position'];
+        $user->gender = $validated['gender'];
+        $user->email = $validated['email'];
         $user->save();
 
         // Log user update
@@ -622,7 +633,7 @@ class UserController extends Controller
             'document_type' => 'required|in:special_order,order,memorandum,for_info,letters,email,travel_order,city_resolution,invitations,vouchers,diploma,checks,job_orders,contract_of_service,pr',
             'description' => 'nullable|string',
             'files' => 'nullable|array',
-            'files.*' => 'nullable|file|max:10240', // 10MB max per file
+            'files.*' => 'nullable|file|max:51200|mimes:pdf,doc,docx,,txt,jpg,jpeg,png',
             'recipient_ids' => 'required|array|min:1',
             'recipient_ids.*' => 'exists:departments,id',
             'initial_recipient_id' => 'nullable|exists:departments,id',
@@ -716,24 +727,13 @@ class UserController extends Controller
         // Generate barcode at the moment the document is sent
         $currentUser = Auth::user();
         $department = $currentUser->department;
-        $departmentCode = $department ? $department->code : 'NOCODE';
 
         // use the value of order_number as the barcode value but without the dashes
         $barcodeValue = $document->order_number;
         $barcodeValue = str_replace('-', '', $barcodeValue);
 
-        // Generate barcode SVG
-        $generator = new BarcodeGeneratorSVG();
-        $barcodeSvg = $generator->getBarcode($barcodeValue, $generator::TYPE_CODE_128);
-
-        // Save SVG to storage
-        $barcodePath = 'barcodes/document_' . $document->id . '_' . $barcodeValue . '.svg';
-        Storage::disk('public')->put($barcodePath, $barcodeSvg);
-        $barcodePath = 'public/'. $barcodePath;
-
         // Save to document
         $document->update([
-            'barcode_path' => $barcodePath,
             'barcode_value' => $barcodeValue,
         ]);
 
@@ -766,7 +766,7 @@ class UserController extends Controller
             foreach ($request->file('files') as $file) {
                 $filePath = $file->store('documents', 'public');
                 $document->files()->create([
-                    'file_path' => 'public/'. $filePath,
+                    'file_path' => $filePath,
                     'original_filename' => $file->getClientOriginalName(),
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
@@ -823,8 +823,6 @@ class UserController extends Controller
                 'subject' => $document->subject,
                 'order_number' => $document->order_number,
                 'barcode_value' => $document->barcode_value,
-                'barcode_path' => $document->barcode_path,
-                'barcode_svg_url' => asset(str_replace('public/', 'storage/', $document->barcode_path))
             ]
         ]);
 
@@ -970,7 +968,8 @@ class UserController extends Controller
             'description' => 'nullable|string',
             'selected_department_id' => 'required|exists:departments,id',
             'files' => 'nullable|array',
-            'files.*' => 'nullable|file|max:10240', // 10MB max per file
+            // 50MB max per file; allow only safe office/image/text types
+            'files.*' => 'nullable|file|max:51200|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif',
         ]);
 
         $doc->order_number = $validated['order_number'];
@@ -993,7 +992,7 @@ class UserController extends Controller
             foreach ($request->file('files') as $file) {
                 $filePath = $file->store('documents', 'public');
                 $doc->files()->create([
-                    'file_path' => 'public/'. $filePath,
+                    'file_path' => $filePath,
                     'original_filename' => $file->getClientOriginalName(),
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
@@ -1064,9 +1063,9 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
@@ -1187,7 +1186,6 @@ class UserController extends Controller
                     'status' => $document->status,
                     'is_public' => $document->is_public,
                     'public_token' => $document->public_token,
-                    'barcode_path' => $document->barcode_path,
                     'barcode_value' => $document->barcode_value,
                     'created_at' => $document->created_at,
                     'files_count' => $document->files->count(),
@@ -1213,7 +1211,6 @@ class UserController extends Controller
                 'status' => $document->status,
                 'is_public' => $document->is_public,
                 'public_token' => $document->public_token,
-                'barcode_path' => $document->barcode_path,
                 'barcode_value' => $document->barcode_value,
                 'created_at' => $document->created_at,
                 'files_count' => $document->files->count(),
@@ -1247,7 +1244,6 @@ class UserController extends Controller
         $document->update([
             'is_public' => false,
             'public_token' => null,
-            'barcode_path' => null,
             'barcode_value' => null,
         ]);
 

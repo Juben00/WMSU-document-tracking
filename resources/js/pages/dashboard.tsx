@@ -277,21 +277,29 @@ export default function Dashboard({
                     </Card>
 
                     {/* Monthly Trends */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5" />
-                                Document Trends
-                            </CardTitle>
+                    <Card className="relative overflow-hidden">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium">Document Trends</CardTitle>
+                            </div>
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                                {monthlyTrends.length > 0 ? monthlyTrends[monthlyTrends.length - 1]?.count || 0 : 0}
+                            </Badge>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-2">
-                                {monthlyTrends.slice(-3).map((trend, index) => (
-                                    <div key={index} className="flex items-center justify-between">
-                                        <span className="text-sm text-muted-foreground">{trend.month}</span>
-                                        <Badge variant="outline">{trend.count}</Badge>
-                                    </div>
-                                ))}
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    {monthlyTrends.length > 0 ? monthlyTrends[monthlyTrends.length - 1]?.month || 'N/A' : 'N/A'}
+                                </p>
+                                <div className="space-y-2 mt-2">
+                                    {monthlyTrends.slice(-3).map((trend, index) => (
+                                        <div key={index} className="flex items-center justify-between">
+                                            <span className="text-sm text-muted-foreground">{trend.month}</span>
+                                            <Badge variant="outline" className="text-xs">{trend.count}</Badge>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
+import BarcodeComponent from '@/components/barcode';
 
 interface PublishedDocument {
     id: number;
@@ -35,7 +36,6 @@ interface PublishedDocument {
     status: string;
     is_public: boolean;
     public_token: string;
-    barcode_path?: string;
     barcode_value?: string;
     created_at: string;
     files_count: number;
@@ -413,7 +413,7 @@ const PublishedDocuments = ({ publishedDocuments, auth }: Props) => {
                                 </div>
 
                                 {/* Barcode Section */}
-                                {selectedDocument.barcode_path && (
+                                {selectedDocument.barcode_value && (
                                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
                                         <div className="flex items-center gap-3 mb-6">
                                             <div className="p-2 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg">
@@ -423,19 +423,14 @@ const PublishedDocuments = ({ publishedDocuments, auth }: Props) => {
                                         </div>
 
                                         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <img
-                                                    src={`/storage/${selectedDocument.barcode_path}`}
-                                                    alt="Barcode"
-                                                    className="w-64 h-32 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-2 shadow-sm"
-                                                />
-                                                <div className="text-center">
-                                                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Barcode Value:</p>
-                                                    <p className="text-sm font-mono text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-                                                        {selectedDocument.barcode_value || selectedDocument.public_token}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            {selectedDocument.barcode_value && (
+                                                <>
+                                                    <BarcodeComponent barcode_value={selectedDocument.barcode_value} />
+                                                    <span className="text-xs text-gray-500 dark:text-gray-200 text-center font-semibold mb-2">
+                                                        Scan or use the code to access the document
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 )}

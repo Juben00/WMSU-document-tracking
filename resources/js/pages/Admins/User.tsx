@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
-import { Plus, Trash2, Lock, Unlock, Eye, Pencil } from 'lucide-react';
+import { useForm, router } from '@inertiajs/react';
+import { Plus, Trash2, Lock, Unlock, Eye, Pencil, Key } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import AddNewAdmin from '@/components/Admin/AddAdmin';
@@ -49,10 +49,11 @@ interface Props {
 
 export default function Admins({ users, departments, auth, departmentsForUserCreation }: Props) {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
+    const [selectedUserType, setSelectedUserType] = useState<'admin' | 'user'>('admin');
     const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false);
     const [filter, setFilter] = useState('');
     const { processing, delete: destroy, patch, data, setData, post, errors, reset, put } = useForm({
         first_name: '',
@@ -62,9 +63,10 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
         gender: '',
         position: '',
         department_id: '',
-        avatar: null,
         email: '',
         role: 'admin',
+        new_password: '',
+        confirm_password: '',
     });
 
     const handleToggleStatus = (user: User) => {
@@ -134,6 +136,41 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
         setIsEditDialogOpen(true);
     };
 
+    const handlePasswordChange = (user: User) => {
+        setSelectedAdmin(user);
+        setData('new_password', '');
+        setData('confirm_password', '');
+        setIsPasswordChangeDialogOpen(true);
+    };
+
+    const handlePasswordChangeSubmit = () => {
+        if (data.new_password !== data.confirm_password) {
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        if (data.new_password.length < 8) {
+            toast.error('Password must be at least 8 characters long');
+            return;
+        }
+
+        // Use router.patch directly to send only password data
+        router.patch(route('admins.change-password', selectedAdmin?.id), {
+            new_password: data.new_password,
+            new_password_confirmation: data.confirm_password,
+        }, {
+            onSuccess: () => {
+                toast.success('Password changed successfully');
+                setIsPasswordChangeDialogOpen(false);
+                setData('new_password', '');
+                setData('confirm_password', '');
+            },
+            onError: (errors: any) => {
+                toast.error('Failed to change password. Please try again.');
+            }
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             {processing && <Spinner />}
@@ -153,50 +190,57 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                         <Input type="text" placeholder="Search User" onChange={(e) => setFilter(e.target.value)} value={filter} />
                     </div>
                     <div className="flex items-center gap-2">
-                        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) { reset(); setSelectedUserType('admin'); setData('role', 'admin'); } }}>
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Create Admin
+                                    Create
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Create New Admin</DialogTitle>
+                                    <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white"   >Create New {selectedUserType === 'admin' ? 'Admin' : 'User'}</DialogTitle>
                                 </DialogHeader>
-                                <AddNewAdmin
-                                    setIsCreateDialogOpen={setIsCreateDialogOpen}
-                                    departments={departments}
-                                    processing={processing}
-                                    post={post}
-                                    setData={setData}
-                                    data={data}
-                                    errors={errors}
-                                    reset={reset}
-                                />
-                            </DialogContent>
-                        </Dialog>
-                        <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="outline">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create User
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Create New User</DialogTitle>
-                                </DialogHeader>
-                                <AddNewUser
-                                    setIsCreateDialogOpen={setIsCreateUserDialogOpen}
-                                    departments={departmentsForUserCreation}
-                                    processing={processing}
-                                    post={post}
-                                    setData={setData}
-                                    data={data}
-                                    errors={errors}
-                                    reset={reset}
-                                />
+                                <div className="">
+                                    <Label htmlFor="user_type">User Type</Label>
+                                    <div className="mt-2 flex gap-2">
+                                        <Button
+                                            variant={selectedUserType === 'admin' ? 'default' : 'outline'}
+                                            onClick={() => { setSelectedUserType('admin'); setData('role', 'admin'); }}
+                                        >
+                                            Admin
+                                        </Button>
+                                        <Button
+                                            variant={selectedUserType === 'user' ? 'default' : 'outline'}
+                                            onClick={() => { setSelectedUserType('user'); setData('role', 'user'); }}
+                                        >
+                                            User
+                                        </Button>
+                                    </div>
+                                </div>
+                                {selectedUserType === 'admin' ? (
+                                    <AddNewAdmin
+                                        setIsCreateDialogOpen={setIsCreateDialogOpen}
+                                        departments={departments}
+                                        processing={processing}
+                                        post={post}
+                                        setData={setData}
+                                        data={data}
+                                        errors={errors}
+                                        reset={reset}
+                                    />
+                                ) : (
+                                    <AddNewUser
+                                        setIsCreateDialogOpen={setIsCreateDialogOpen}
+                                        departments={departmentsForUserCreation}
+                                        processing={processing}
+                                        post={post}
+                                        setData={setData}
+                                        data={data}
+                                        errors={errors}
+                                        reset={reset}
+                                    />
+                                )}
                             </DialogContent>
                         </Dialog>
                     </div>
@@ -260,6 +304,14 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
+                                                onClick={() => handlePasswordChange(user)}
+                                                title="Change Password"
+                                            >
+                                                <Key className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={() => handleToggleStatus(user)}
                                                 title={user.is_active ? 'Deactivate Admin' : 'Activate Admin'}
                                                 disabled={!user.is_active && user.id === auth.user.id}
@@ -291,7 +343,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Admin Details</DialogTitle>
+                            <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Admin Details</DialogTitle>
                         </DialogHeader>
                         {selectedAdmin && (
                             <div className="space-y-4">
@@ -354,7 +406,7 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Edit Admin</DialogTitle>
+                            <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Edit Admin</DialogTitle>
                         </DialogHeader>
                         {selectedAdmin && (
                             <EditAdmin
@@ -368,6 +420,65 @@ export default function Admins({ users, departments, auth, departmentsForUserCre
                                 errors={errors}
                                 reset={reset}
                             />
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* Password Change Dialog */}
+                <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle className="text-3xl font-bold text-gray-900 dark:text-white">Change Password for {selectedAdmin ? getFullName(selectedAdmin) : ''}</DialogTitle>
+                        </DialogHeader>
+                        {selectedAdmin && (
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="new_password">New Password</Label>
+                                    <Input
+                                        id="new_password"
+                                        type="password"
+                                        value={data.new_password}
+                                        onChange={(e) => setData('new_password', e.target.value)}
+                                        placeholder="Enter new password"
+                                        className="mt-1"
+                                    />
+                                    {errors.new_password && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.new_password}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="confirm_password">Confirm Password</Label>
+                                    <Input
+                                        id="confirm_password"
+                                        type="password"
+                                        value={data.confirm_password}
+                                        onChange={(e) => setData('confirm_password', e.target.value)}
+                                        placeholder="Confirm new password"
+                                        className="mt-1"
+                                    />
+                                    {errors.confirm_password && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.confirm_password}</p>
+                                    )}
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setIsPasswordChangeDialogOpen(false);
+                                            setData('new_password', '');
+                                            setData('confirm_password', '');
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handlePasswordChangeSubmit}
+                                        disabled={processing || !data.new_password || !data.confirm_password}
+                                    >
+                                        Change Password
+                                    </Button>
+                                </div>
+                            </div>
                         )}
                     </DialogContent>
                 </Dialog>

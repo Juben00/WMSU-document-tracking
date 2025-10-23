@@ -167,7 +167,7 @@ const Navbar = () => {
             icon: <LayoutGrid className="w-5 h-5" />,
         },
         {
-            label: 'Departments',
+            label: 'Department',
             href: '/departments',
             icon: <Building className="w-5 h-5" />,
         },

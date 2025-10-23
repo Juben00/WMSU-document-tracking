@@ -39,44 +39,38 @@ class AdminController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'role' => ['required', 'string', 'in:admin,user'],
-            'avatar' => ['nullable', 'image', 'max:2048'], // 2MB max
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
         ]);
 
-        $avatarPath = null;
-        if ($request->hasFile('avatar')) {
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-        }
 
         // Generate a random password
-        // $randomPassword = Str::random(12);
+        $randomPassword = Str::random(12);
 
         $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'middle_name' => $request->middle_name,
-            'suffix' => $request->suffix,
+            'first_name' => Str::title(trim($request->first_name)),
+            'last_name' => Str::title(trim($request->last_name)),
+            'middle_name' => $request->filled('middle_name') ? Str::title(trim($request->middle_name)) : null,
+            'suffix' => $request->filled('suffix') ? Str::title(trim($request->suffix)) : null,
             'gender' => $request->gender,
             'position' => $request->position,
             'department_id' => $request->department_id,
             'role' => $request->role,
-            'avatar' => $avatarPath,
             'email' => $request->email,
-            'password' => Hash::make("password"),
+            'password' => Hash::make($randomPassword),
         ]);
 
         // Notify the user about their account creation (in-app)
         $user->notify(new InAppNotification('Your admin account has been created.', ['user_id' => $user->id]));
         // Send email with credentials
-        $user->notify(new SendAdminAccountMail($user->first_name . ' ' . $user->last_name, $user->email, "password"));
+        $user->notify(new SendAdminAccountMail($user->first_name . ' ' . $user->last_name, $user->email, $randomPassword));
 
         return redirect()->route('admins.index');
     }
@@ -106,25 +100,24 @@ class AdminController extends Controller
     public function update(Request $request, User $admin)
     {
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'last_name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
+            'middle_name' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z]+$/'],
             'suffix' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'string', 'in:Male,Female'],
             'position' => ['required', 'string', 'max:255'],
             'department_id' => ['required', 'exists:departments,id'],
-            'avatar' => ['nullable', 'image', 'max:2048'], // 2MB max
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $admin->id],
         ]);
 
-        $data = $request->except('avatar');
-
-        if ($request->hasFile('avatar')) {
-            // Delete old avatar if exists
-            if ($admin->avatar) {
-                Storage::disk('public')->delete($admin->avatar);
-            }
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        $data = $request->all();
+        $data['first_name'] = Str::title(trim($data['first_name']));
+        $data['last_name'] = Str::title(trim($data['last_name']));
+        if (isset($data['middle_name']) && $data['middle_name'] !== null) {
+            $data['middle_name'] = Str::title(trim($data['middle_name']));
+        }
+        if (isset($data['suffix']) && $data['suffix'] !== null) {
+            $data['suffix'] = Str::title(trim($data['suffix']));
         }
 
         $admin->update($data);
@@ -137,6 +130,23 @@ class AdminController extends Controller
         $admin->notify(new InAppNotification('Your admin account has been updated.', ['admin_id' => $admin->id]));
 
         return redirect()->route('admins.index');
+    }
+
+    public function changePassword(Request $request, User $admin)
+    {
+        $request->validate([
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $admin->update([
+            'password' => Hash::make($request->new_password),
+            'password_changed_at' => now(),
+        ]);
+
+        // Notify the user about their password change
+        $admin->notify(new InAppNotification('Your password has been changed by an administrator.', ['user_id' => $admin->id]));
+
+        return redirect()->route('admins.index')->with('success', 'Password changed successfully.');
     }
 
     public function dashboard()
@@ -303,14 +313,13 @@ class AdminController extends Controller
                     'status' => $document->status,
                     'is_public' => $document->is_public,
                     'public_token' => $document->public_token,
-                    'barcode_path' => $document->barcode_path,
                     'barcode_value' => $document->barcode_value,
                     'created_at' => $document->created_at,
                     'owner' => [
                         'id' => $document->owner->id,
                         'name' => $document->owner->first_name . ' ' . $document->owner->last_name,
                         'email' => $document->owner->email,
-                        'department' => $document->owner->department->name ?? 'No Department',
+                        'office' => $document->owner->department->name ?? 'No Department',
                     ],
                     'files_count' => $document->files->count(),
                     'public_url' => route('documents.public_view', ['public_token' => $document->public_token]),
@@ -328,16 +337,11 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Document is not published.');
         }
 
-        // Delete barcode file if exists
-        if ($document->barcode_path) {
-            Storage::disk('public')->delete($document->barcode_path);
-        }
 
         // Update document
         $document->update([
             'is_public' => false,
             'public_token' => null,
-            'barcode_path' => null,
             'barcode_value' => null,
         ]);
 

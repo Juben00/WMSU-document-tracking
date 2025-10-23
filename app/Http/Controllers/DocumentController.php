@@ -42,7 +42,7 @@ class DocumentController extends Controller
                 }
             ],
             'comments' => 'nullable|string|max:1000',
-            'files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif', // 10MB max per file
+            'files.*' => 'nullable|file|max:51200|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif', // 50MB max per file
         ]);
 
         // Find the current active recipient (the one forwarding)
@@ -104,7 +104,7 @@ class DocumentController extends Controller
             foreach ($request->file('files') as $file) {
                 $filePath = $file->store('documents', 'public');
                 $document->files()->create([
-                    'file_path' => 'public/'. $filePath,
+                    'file_path' => $filePath,
                     'original_filename' =>  $file->getClientOriginalName(),
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
@@ -172,7 +172,7 @@ class DocumentController extends Controller
         $request->validate([
             'status' => 'required|in:approved,rejected,returned',
             'comments' => 'nullable|string|max:1000',
-            'attachment_files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif', // 10MB max per file
+            'attachment_files.*' => 'nullable|file|max:51200|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif', // 50MB max per file
         ]);
 
         $recipient = DocumentRecipient::where('document_id', $document->id)
@@ -248,7 +248,7 @@ class DocumentController extends Controller
             foreach ($request->file('attachment_files') as $file) {
                 $filePath = $file->store('documents', 'public');
                 $document->files()->create([
-                    'file_path' => 'public/'. $filePath,
+                    'file_path' => $filePath,
                     'original_filename' => $file->getClientOriginalName(),
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
@@ -620,14 +620,13 @@ class DocumentController extends Controller
                     'document_type' => $document->document_type,
                     'is_public' => $document->is_public,
                     'public_token' => $document->public_token,
-                    'barcode_path' => $document->barcode_path,
                     'barcode_value' => $document->barcode_value,
                     'created_at' => $document->created_at,
                     'owner' => [
                         'id' => $document->owner->id,
                         'name' => $document->owner->first_name . ' ' . $document->owner->last_name,
                         'email' => $document->owner->email,
-                        'department' => $document->owner->department->name ?? 'No Department',
+                        'office' => $document->owner->department->name ?? 'No Department',
                     ],
                     'files_count' => $document->files->count(),
                     'public_url' => route('documents.public_view', ['public_token' => $document->public_token]),
@@ -649,10 +648,6 @@ class DocumentController extends Controller
             }
         }
 
-        // Delete barcode file if exists
-        if ($document->barcode_path && Storage::disk('public')->exists($document->barcode_path)) {
-            Storage::disk('public')->delete($document->barcode_path);
-        }
 
         // Delete notifications related to this document
         // Get all users involved with this document (owner and department admins)

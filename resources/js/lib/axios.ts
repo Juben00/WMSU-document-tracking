@@ -67,7 +67,6 @@ axios.interceptors.request.use(
 
         // If no token found immediately, wait for it (for first login scenarios)
         if (!token) {
-            console.log('CSRF token not found immediately, waiting for it...');
             token = await waitForCsrfToken(2000); // Wait up to 2 seconds
         }
 
@@ -94,7 +93,6 @@ axios.interceptors.response.use(
 
             // Don't retry if this is a logout request to avoid infinite loops
             if (error.config.url && error.config.url.includes('/logout')) {
-                console.log('Logout request failed with 419, redirecting to login');
                 window.location.href = '/login';
                 return Promise.reject(error);
             }
@@ -108,14 +106,12 @@ axios.interceptors.response.use(
             }
 
             if (freshToken && freshToken !== error.config.headers['X-CSRF-TOKEN']) {
-                console.log('Retrying request with fresh CSRF token');
                 error.config.headers['X-CSRF-TOKEN'] = freshToken;
                 return axios.request(error.config);
             }
 
             // If this is a login page, just reject the error to show form validation
             if (window.location.pathname === '/login') {
-                console.log('Login page CSRF error, showing form validation');
                 return Promise.reject(error);
             }
 

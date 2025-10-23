@@ -565,7 +565,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                     </div>
 
                     {/* Enhanced Tabs */}
-                    <Card className="mb-8 border-2 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <Card className="mb-8 border-2 shadow-lg bg-white dark:bg-gray-800 dark:to-gray-900">
                         <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 ">
                                 {tabConfig.map((tab) => {
@@ -605,7 +605,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                     </Card>
 
                     {/* Enhanced Search and Filter Section */}
-                    <Card className="mb-8 border-2 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <Card className="mb-8 border-2 shadow-lg  bg-white dark:bg-gray-800 dark:to-gray-900">
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
@@ -739,7 +739,7 @@ const Documents = ({ documents = [], receivedDocuments = [], auth, document_data
                     </Card>
 
                     {/* Enhanced Documents Grid */}
-                    <Card className="border-2 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <Card className="border-2 shadow-lg bg-white dark:bg-gray-800 dark:to-gray-900">
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">

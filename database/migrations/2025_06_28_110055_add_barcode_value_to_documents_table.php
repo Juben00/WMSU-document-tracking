@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('documents', function (Blueprint $table) {
-            $table->string('barcode_value')->nullable()->after('barcode_path');
+            $table->string('barcode_value')->nullable()->after('public_token');
         });
     }
 

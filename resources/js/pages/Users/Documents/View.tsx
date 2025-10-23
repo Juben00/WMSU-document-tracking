@@ -78,7 +78,6 @@ interface Document {
     recipient_status: string | null;
     owner_id: number;
     is_public: boolean;
-    barcode_path?: string;
     public_token?: string;
     barcode_value?: string;
     department_id: number;
@@ -171,7 +170,6 @@ const formatFileSize = (bytes: number) => {
 
 // FileCard component for previewing and downloading files
 const FileCard = ({ file, documentId, color = 'red' }: { file: any, documentId: number, color?: 'red' | 'blue' }) => (
-    console.log('file', file),
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-5 flex flex-col items-center border ${color === 'red' ? 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500' : 'border-blue-200 dark:border-blue-600 hover:border-blue-300 dark:hover:border-blue-500'}`}>
         <div className={`w-full h-48 flex items-center justify-center ${color === 'red' ? 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600' : 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20'} rounded-lg mb-4 overflow-hidden`}>
             <a
@@ -264,7 +262,6 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
         forward_to_id: null as number | null,
     });
 
-    console.log('document', document);
 
 
     // Check if current user is an active recipient
@@ -286,7 +283,6 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
     const notApprovedAndRejected = () => !['approved', 'rejected'].includes(document.status);
     const senderIsPresident = () => document.owner.department?.is_presidential || false;
 
-    console.log('sender is president', senderIsPresident());
 
     // Action permission checks
     const canMarkAsReceived = () => {
@@ -300,11 +296,6 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
         return canRespond() && isNonForInfoDocument() && isFinalRecipient() && !isReturned() && notApprovedAndRejected() && !senderIsPresident();
     };
 
-    console.log('can respond', canRespond());
-    console.log('is final recipient', !isFinalRecipient());
-    console.log('is not owner', !isNotOwner());
-    console.log('!is returned', !isReturned());
-    console.log('!pending', !isPending());
 
     // Removed canForwardToOffice and its usages
     const canForwardToOffice = () => {
@@ -438,7 +429,6 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
     //     )
     //     : [];
 
-    console.log('responseFiles', responseFiles);
 
     const copyToClipboard = async (text: string) => {
         try {
@@ -600,7 +590,7 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                         {/* Subject */}
                                         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-600">
                                             <dt className="text-sm font-semibold text-gray-600 dark:text-gray-100 mb-2">Subject</dt>
-                                            <dd className="mt-1 text-lg text-gray-900 dark:text-gray-200 font-semibold leading-relaxed">{document.subject}</dd>
+                                            <dd className="mt-1 text-gray-900 dark:text-gray-200 leading-relaxed">{document.subject}</dd>
                                         </div>
 
                                         {/* Description */}
@@ -664,45 +654,15 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                 </div>
                                 {/* Barcode & Link Section */}
                                 <div className="col-span-2 flex flex-col items-center gap-4 w-full h-fit ">
-                                    {(document.barcode_path || document.is_public) && (
+                                    {(document.barcode_value || document.is_public) && (
                                         <div className=" bg-white dark:bg-gray-900 rounded-xl w-full h-fit p-6 border border-gray-200 dark:border-gray-700">
                                             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                                                 <ScanEye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                                 Access Document
                                             </h3>
-                                            {document.barcode_path && (
+                                            {document.barcode_value && (
                                                 <>
-                                                    {/* <img src={`/storage/${document.barcode_path}`} alt="Barcode" className="w-80 mb-4 rounded border mx-auto border-gray-200 dark:border-gray-700 bg-white" /> */}
-                                                    {/* Barcode Value Card */}
-                                                    {/* <div className="w-full max-w-sm mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 dark:border-gray-700 mb-4">
-                                                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Barcode</span>
-                                                        <div className="flex items-center w-full justify-center gap-2 mb-2">
-                                                            <span className="text-base font-mono text-gray-800 dark:text-gray-200 truncate max-w-[200px]" title={document.barcode_value || document.public_token}>
-                                                                {document.barcode_value || document.public_token}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(document.barcode_value || document.public_token || '');
-                                                                    setCopied(true);
-                                                                    setTimeout(() => setCopied(false), 2000);
-                                                                }}
-                                                                className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900 transition"
-                                                                title="Copy"
-                                                                type="button"
-                                                            >
-                                                                <Copy className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                                            </button>
-                                                            <a
-                                                                href={`/storage/${document.barcode_path}`}
-                                                                download={`barcode-${document.order_number || document.id}.svg`}
-                                                                className="p-2 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900 transition"
-                                                                title="Download"
-                                                            >
-                                                                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                                            </a>
-                                                        </div>
-                                                    </div> */}
-                                                    <BarcodeComponent barcode_path={document.barcode_path} barcode_value={document.barcode_value} />
+                                                    <BarcodeComponent barcode_value={document.barcode_value} />
                                                     <span className="text-xs text-gray-500 dark:text-gray-200 text-center font-semibold mb-2">
                                                         Scan or use the code to access the document
                                                     </span>
@@ -1057,8 +1017,6 @@ const ViewDocument = ({ document, auth, users, otherDepartments, throughUsers, a
                                                 );
 
                                                 const recipientName = recipient.user ? `${recipient.user.first_name} ${recipient.user.last_name}` : recipient.department?.name;
-
-                                                console.log('recipient', recipient);
 
                                                 return (
                                                     <div key={recipient.id} className="relative flex items-start gap-6">

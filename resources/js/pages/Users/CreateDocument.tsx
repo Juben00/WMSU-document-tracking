@@ -78,7 +78,33 @@ const CreateDocument = ({ auth, departments }: Props) => {
     const isGeneratingRef = useRef(false);
     const isPresidentDepartment = auth.user.department?.is_presidential || false;
 
-    console.log(auth.user.department?.is_presidential);
+    // Upload limits (keep in sync with backend validation: max:51200 = 50MB per file)
+    const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB per file
+    const MAX_TOTAL_UPLOAD_BYTES = 50 * 1024 * 1024 * 1024; // 1GB total per request
+    // Allowlisted extensions/MIME types; keep in sync with backend mimes
+    const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png'];
+    const ALLOWED_MIMES_PREFIX = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'image/jpeg',
+        'image/png',
+    ];
+
+    const formatBytes = (bytes: number) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const value = parseFloat((bytes / Math.pow(k, i)).toFixed(2));
+        return `${value} ${sizes[i]}`;
+    };
+
 
     // Function to generate auto order number with robust CSRF handling
     const generateOrderNumber = async (retryCount = 0) => {
@@ -91,11 +117,9 @@ const CreateDocument = ({ auth, departments }: Props) => {
         setIsGeneratingOrderNumber(true);
 
         try {
-            console.log(`Generating order number (attempt ${retryCount + 1})`);
 
             // Wait for CSRF token to be available on first attempt
             if (retryCount === 0 && !csrfToken) {
-                console.log("⏳ Waiting for CSRF token...");
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
@@ -106,7 +130,6 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
             if (response.data?.order_number) {
                 setData("order_number", response.data.order_number);
-                console.log("✅ Order number generated:", response.data.order_number);
 
                 // Reset generation state immediately on success
                 isGeneratingRef.current = false;
@@ -118,16 +141,14 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
         } catch (error: any) {
             const status = error.response?.status;
-            console.error(`❌ Error generating order number (attempt ${retryCount + 1}):`, error.response?.data?.error || error.message);
+            console.error(`Error generating order number (attempt ${retryCount + 1}):`, error.response?.data?.error || error.message);
 
             // Handle CSRF 419 errors with automatic retry
             if (status === 419 && retryCount < 3) {
-                console.log(`🔄 CSRF error detected, retrying in ${(retryCount + 1) * 1000}ms...`);
 
                 // Try to refresh CSRF token first
                 try {
                     await axios.get(route("users.refresh-csrf"));
-                    console.log("🔄 CSRF token refreshed");
                 } catch (refreshError) {
                     console.warn("Failed to refresh CSRF token:", refreshError);
                 }
@@ -245,6 +266,59 @@ const CreateDocument = ({ auth, departments }: Props) => {
                 confirmButtonColor: '#b91c1c',
             });
             return;
+        }
+
+        // Validate file types/sizes before submit to avoid 413 (Payload Too Large) and unsafe uploads
+        if (data.files && data.files.length > 0) {
+            // Type allowlist check
+            const disallowed = data.files
+                .map((f) => {
+                    const ext = f.name.split('.').pop()?.toLowerCase() || '';
+                    const mime = f.type;
+                    const extAllowed = ALLOWED_EXTENSIONS.includes(ext);
+                    const mimeAllowed = mime ? ALLOWED_MIMES_PREFIX.some((allowed) => mime === allowed) : extAllowed; // fallback to ext
+                    return { f, ext, mime, ok: extAllowed && mimeAllowed };
+                })
+                .filter(({ ok }) => !ok);
+            if (disallowed.length > 0) {
+                const list = disallowed.map(({ f }) => f.name).join(', ');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Unsupported File Type',
+                    html: `Only these file types are allowed: <br/><b>${ALLOWED_EXTENSIONS.join(', ')}</b><br/>Blocked: ${list}`,
+                    confirmButtonColor: '#b91c1c',
+                });
+                return;
+            }
+
+            // Per-file check
+            const tooLargeFiles = data.files
+                .map((f, idx) => ({ f, idx }))
+                .filter(({ f }) => f.size > MAX_FILE_SIZE_BYTES);
+            if (tooLargeFiles.length > 0) {
+                const list = tooLargeFiles
+                    .map(({ f }) => `${f.name} (${formatBytes(f.size)})`)
+                    .join(', ');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: `Each file must be ≤ ${formatBytes(MAX_FILE_SIZE_BYTES)}. Oversized: ${list}`,
+                    confirmButtonColor: '#b91c1c',
+                });
+                return;
+            }
+
+            // Total payload check
+            const totalBytes = data.files.reduce((sum, f) => sum + f.size, 0);
+            if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Total Upload Too Large',
+                    text: `Selected files total ${formatBytes(totalBytes)}, which exceeds the limit of ${formatBytes(MAX_TOTAL_UPLOAD_BYTES)}. Please remove some files or compress them.`,
+                    confirmButtonColor: '#b91c1c',
+                });
+                return;
+            }
         }
 
         setIsSubmitting(true);
@@ -389,9 +463,41 @@ const CreateDocument = ({ auth, departments }: Props) => {
             // Clean up old object URLs
             fileObjectUrls.current.forEach(url => URL.revokeObjectURL(url));
             fileObjectUrls.current = [];
-            setData('files', files);
+            // Enforce per-file and total limits proactively on selection
+            const validFiles: File[] = [];
+            let runningTotal = 0;
+            const rejected: string[] = [];
+            files.forEach((file) => {
+                const ext = file.name.split('.').pop()?.toLowerCase() || '';
+                const mime = file.type;
+                const extAllowed = ALLOWED_EXTENSIONS.includes(ext);
+                const mimeAllowed = mime ? ALLOWED_MIMES_PREFIX.some((allowed) => mime === allowed) : extAllowed;
+                if (!extAllowed || !mimeAllowed) {
+                    rejected.push(`${file.name} (unsupported type)`);
+                    return;
+                }
+                if (file.size > MAX_FILE_SIZE_BYTES) {
+                    rejected.push(`${file.name} (${formatBytes(file.size)})`);
+                    return;
+                }
+                if (runningTotal + file.size > MAX_TOTAL_UPLOAD_BYTES) {
+                    rejected.push(`${file.name} (${formatBytes(file.size)})`);
+                    return;
+                }
+                runningTotal += file.size;
+                validFiles.push(file);
+            });
+            if (rejected.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Some files were skipped',
+                    html: `The following exceeded the limits and were not added: <br/>${rejected.join('<br/>')}`,
+                    confirmButtonColor: '#b91c1c',
+                });
+            }
+            setData('files', validFiles);
             // Only create previews for images
-            const previews = files.map((file): { type: 'image' | 'file', value: string, name: string } => {
+            const previews = validFiles.map((file): { type: 'image' | 'file', value: string, name: string } => {
                 if (file.type.startsWith('image/')) {
                     const url = URL.createObjectURL(file);
                     fileObjectUrls.current.push(url);
@@ -896,7 +1002,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                     {/* Recipients Section */}
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
-                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-blue-100 dark:border-blue-800/30">
+                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-red-900/20 dark:to-indigo-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <Users className="w-6 h-6 text-white" />
@@ -982,7 +1088,7 @@ const CreateDocument = ({ auth, departments }: Props) => {
 
                     {/* Files Section */}
                     <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden mb-10 border border-white/20 dark:border-gray-700/50">
-                        <div className="bg-gradient-to-r from-red-50 to-emerald-50 dark:from-red-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
+                        <div className="bg-gradient-to-r from-red-50 to-red-50 dark:from-red-900/20 dark:to-red-900/20 px-8 py-6 border-b border-red-100 dark:border-red-800/30">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
                                     <Upload className="w-6 h-6 text-white" />

@@ -1,5 +1,6 @@
 import Navbar from '@/components/User/navbar'
 import React, { useEffect, useState } from 'react'
+import { router } from '@inertiajs/react'
 import {
     FileText,
     Hourglass,
@@ -90,6 +91,10 @@ const Dashboard = () => {
             .catch(() => setLoading(false))
     }, [])
 
+    const handleNavigateToDocuments = () => {
+        router.visit('/documents')
+    }
+
     return (
         <>
             <Navbar />
@@ -107,7 +112,11 @@ const Dashboard = () => {
                             {/* Stats Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {statCards.map(card => (
-                                    <div key={card.key} className={`${card.bg} rounded-lg p-4 flex items-center gap-3`}>
+                                    <div
+                                        key={card.key}
+                                        className={`${card.bg} rounded-lg p-4 flex items-center gap-3 cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105`}
+                                        onClick={handleNavigateToDocuments}
+                                    >
                                         <div className={`w-12 h-12 ${card.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
                                             {card.icon}
                                         </div>
@@ -148,7 +157,11 @@ const Dashboard = () => {
                                     ))
                                 ) : stats?.recentActivities?.length ? (
                                     stats.recentActivities.map((activity: any, idx: number) => (
-                                        <div key={idx} className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                        <div
+                                            key={idx}
+                                            className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer hover:shadow-md"
+                                            onClick={handleNavigateToDocuments}
+                                        >
                                             <div className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center mr-4">
                                                 <div className="text-lg">
                                                     {statusIcon[activity.status as keyof typeof statusIcon] || <FileText className="text-gray-400" />}
